@@ -21,7 +21,6 @@ static void update_key_state(u8 current_state, Key_State *key_state)
 void input_update()
 {
     const u8 *keyboard_state = SDL_GetKeyboardState(NULL);
-
     update_key_state(keyboard_state[global.config.keybinds[INPUT_KEY_LEFT]], &global.input.left);
     update_key_state(keyboard_state[global.config.keybinds[INPUT_KEY_RIGHT]], &global.input.right);
     update_key_state(keyboard_state[global.config.keybinds[INPUT_KEY_UP]], &global.input.up);

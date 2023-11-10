@@ -10,8 +10,6 @@
 #include "engine/time.h"
 #include "engine/input.h"
 
-// void SDL_ExitWithError(const char *message);
-
 static bool should_quit = false;
 static vec2 pos;
 
@@ -78,10 +76,3 @@ int main(int argc, char *argv[])
     }
     return EXIT_SUCCESS;
 }
-
-// void SDL_ExitWithError(const char *message)
-// {
-//     SDL_Log("ERREUR : %s > %s\n", message, SDL_GetError());
-//     SDL_Quit();
-//     exit(EXIT_FAILURE);
-// }

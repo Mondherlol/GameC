@@ -5,10 +5,10 @@
 
 static const char *CONFIG_DEFAULT =
     "[controls]\n"
-    "left = Q\n"
-    "right = D\n"
-    "up = Z\n"
+    "up = W\n"
     "down = S\n"
+    "left = A\n"
+    "right = D\n"
     "escape = Escape\n"
     "\n";
 
@@ -26,7 +26,6 @@ static char *config_get_value(const char *config_buffer, const char *value)
 
     char *curr = line;
     char *tmp_ptr = &tmp_buffer[0];
-
     // Placer le pointeur sur '='
     while (*curr != '=' && curr != end)
         ++curr;
@@ -79,8 +78,9 @@ void config_init(void)
 void config_key_bind(Input_Key key, const char *key_name)
 {
     SDL_Scancode scan_code = SDL_GetScancodeFromName(key_name);
+
     if (scan_code == SDL_SCANCODE_UNKNOWN)
-        ERROR_RETURN(, " Erreur d'assignation de touche. Touche non reconnue : %s\n", key_name);
+        ERROR_RETURN(, " Erreur d'assignation de touche. Touche non reconnue : %s \n", key_name);
 
     global.config.keybinds[key] = scan_code;
 }
