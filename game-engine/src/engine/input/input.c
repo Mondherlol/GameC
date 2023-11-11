@@ -1,6 +1,7 @@
 #include "../input.h"
 #include "../global.h"
 #include "../types.h"
+#include "../util.h"
 
 // Gérer l'état des touches pressées
 static void update_key_state(u8 current_state, Key_State *key_state)
@@ -35,7 +36,7 @@ void controller_init()
 {
 
     if (SDL_Init(SDL_INIT_GAMECONTROLLER) < 0)
-        ERROR_RETURN("Erreur lors de l'initialisation de la manette.");
+        ERROR_RETURN("Erreur lors de l'initialisation de la manette : ", "");
 
     int numControllers = SDL_NumJoysticks();
     if (numControllers < 1)
