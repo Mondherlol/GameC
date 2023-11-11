@@ -27,3 +27,4 @@ typedef struct input_state
 } Input_State;
 
 void input_update(void);
+void controller_init(void);

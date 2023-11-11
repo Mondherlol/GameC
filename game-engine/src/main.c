@@ -27,12 +27,40 @@ static void input_handle(void)
         should_quit = true;
 }
 
+static void controller_handle(SDL_Event event)
+{
+    if (event.jaxis.axis == 0)
+    {
+        // Axe X
+        int xAxisValue = event.jaxis.value;
+
+        // Vérifiez la "zone morte" autour de zéro
+        if (abs(xAxisValue) > 8000)
+        {
+            // Faites quelque chose avec xAxisValue (peut-être déplacer le personnage)
+            pos[0] += 500 * global.time.delta * xAxisValue / 32767.0;
+        }
+    }
+    else if (event.jaxis.axis == 1)
+    {
+        // Axe Y
+        int yAxisValue = event.jaxis.value;
+        // Vérifiez la "zone morte" autour de zéro
+        if (abs(yAxisValue) > 8000)
+        {
+            // Faites quelque chose avec yAxisValue
+            pos[1] -= 500 * global.time.delta * yAxisValue / 32767.0;
+        }
+    }
+}
+
 int main(int argc, char *argv[])
 {
     puts("Jeu compile avec succes !");
     time_init(60);
     config_init();
     render_init();
+    controller_init();
 
     pos[0] = global.render.width * 0.5;
     pos[1] = global.render.height * 0.5;
@@ -49,8 +77,18 @@ int main(int argc, char *argv[])
             {
             case SDL_QUIT:
                 should_quit = true;
-                puts("Fenetre fermee.");
                 break;
+            case SDL_JOYAXISMOTION:
+                // Mouvement de l'axe de la manette
+                controller_handle(event);
+                break;
+
+            case SDL_JOYBUTTONDOWN:
+                // Bouton de la manette enfoncé
+                int buttonIndex = event.jbutton.button;
+                printf("Un bouton a ete appuiyé.");
+                break;
+
             default:
                 break;
             }

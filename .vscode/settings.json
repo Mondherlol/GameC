@@ -3,6 +3,7 @@
         "*.ejs": "html",
         "render_internal.h": "c",
         "config.h": "c",
-        "global.h": "c"
+        "global.h": "c",
+        "*.rh": "c"
     }
 }
