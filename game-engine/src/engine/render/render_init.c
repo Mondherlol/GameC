@@ -8,6 +8,7 @@
 #include "render.h"
 #include "render_internal.h"
 
+// Créer fenêtre + charger OPEN GL
 SDL_Window *render_init_window(u32 width, u32 height)
 {
     SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_CORE);
@@ -28,7 +29,7 @@ SDL_Window *render_init_window(u32 width, u32 height)
     if (window == NULL)
         ERROR_EXIT("Création de fenêtre échouée", SDL_GetError());
 
-    puts("Fenêtre crée");
+    puts("Fenêtre creer");
 
     SDL_GL_CreateContext(window);
     if (!gladLoadGLLoader((GLADloadproc)SDL_GL_GetProcAddress))
@@ -45,11 +46,19 @@ SDL_Window *render_init_window(u32 width, u32 height)
 
 void render_init_shaders(Render_State_Internal *state)
 {
+    // Créer le shader par défaut             //Shader vertex (pour la forme)        //Shader frag (pour les couleurs)
     state->shader_default = render_shader_create("./shaders/default.vert", "./shaders/default.frag");
 
+    /* [0001    Va créer une matrice 4x4
+        0001    qui permet de representer
+        0010    l'objet créé dans la fenêtre
+        0100]   en 2D .                      */
     mat4x4_ortho(state->projection, 0, global.render.width, 0, global.render.height, -2, 2);
 
+    // Lui appliquer le shader par défaut
     glUseProgram(state->shader_default);
+
+    //  Envoie la matrice au shader dans le programme GL
     glUniformMatrix4fv(
         glGetUniformLocation(state->shader_default, "projection"),
         1,
@@ -70,18 +79,21 @@ void render_init_color_texture(u32 *texture)
 
 void render_init_quad(u32 *vao, u32 *vbo, u32 *ebo)
 {
-    //    x,    y,  z, u, v
+    // Les vertex (ou sommets) du quadrilataire.
+    // (x,y,z) représentent les coordonnées
+    // (u,v) représentent les coordonnées de textures = (0,1) -> Coin inférieur droit , (0,0) -> Coin superieur gauche
+    //    x    y   z   u  v
     float vertices[] = {
         0.5, 0.5, 0, 0, 0,
         0.5, -0.5, 0, 0, 1,
         -0.5, -0.5, 0, 1, 1,
         -0.5, 0.5, 0, 1, 0};
 
-    // Comme un Quad est composé de deux triangles,
-    // on définit les indice des deux triangles
+    // Comme un quadrilataire est composé de deux triangles,
+    // on définit l'ordre des indices de vertices des deux triangles qui vont composer notre quad,
     u32 indices[] = {
-        0, 1, 3,
-        1, 2, 3};
+        0, 1, 3,  // Triangle 1 : Sommets (vertices[0], vertices[1], vertices[3])
+        1, 2, 3}; // Triangle 2 : Sommets (vertices[1], vertices[2,, vertices[3])
 
     glGenVertexArrays(1, vao);
     glGenBuffers(1, vbo);

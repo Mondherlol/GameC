@@ -5,10 +5,10 @@
 
 static const char *CONFIG_DEFAULT =
     "[controls]\n"
-    "up = W\n"
-    "down = S\n"
-    "left = A\n"
-    "right = D\n"
+    "up = UP\n"
+    "down = DOWN\n"
+    "left = LEFT\n"
+    "right = RIGHT\n"
     "escape = Escape\n"
     "\n";
 
@@ -38,7 +38,7 @@ static char *config_get_value(const char *config_buffer, const char *value)
     while (*curr != '\n' && *curr != 0 && curr != end)
         *tmp_ptr++ = *curr++;
 
-    *(tmp_ptr + 1) = 0;
+    *tmp_ptr = 0;
 
     return tmp_buffer;
 }
