@@ -117,3 +117,25 @@ void render_init_quad(u32 *vao, u32 *vbo, u32 *ebo)
 
     glBindVertexArray(0);
 }
+
+void render_init_line(u32 *vao, u32 *vbo)
+{
+    glGenVertexArrays(1, vao); // Generer un unique vao et le stocker dans la variable pointé par vao
+    glBindVertexArray(*vao);   // Dire à OpenGL qu'on va travailler sur ces sommets là
+
+    glGenBuffers(1, vbo);                // Generer un unique VBO et le stocker dans la variable pointé par vbo
+    glBindBuffer(GL_ARRAY_BUFFER, *vbo); // Lier le vbo créé au gl_array_buffer  de openGL, pour dire qu'on va travailler avec
+
+    // Allouer la place nécessaire pour les vbo et vao, on a besoin de le faire qu'au début
+    glBufferData(GL_ARRAY_BUFFER, 6 * sizeof(float), NULL, GL_DYNAMIC_DRAW);
+    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), NULL);
+
+    // On active l'index 0 du vbo pour le rendu
+    glEnableVertexAttribArray(0);
+
+    // On détache le vbo du gl_array_buffer
+    glBindBuffer(GL_ARRAY_BUFFER, 0);
+
+    // On détache le vao de l'état d'openGL, pour dire qu'on a finit de travailler avec
+    glBindVertexArray(0);
+}

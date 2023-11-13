@@ -35,10 +35,9 @@ static void controller_handle(SDL_Event event)
         // Axe X
         int xAxisValue = event.jaxis.value;
 
-        // Vérifiez la "zone morte" autour de zéro
+        // Vérifier la "zone morte" autour de zéro
         if (abs(xAxisValue) > 8000)
         {
-            // Faites quelque chose avec xAxisValue (peut-être déplacer le personnage)
             pos[0] += 500 * global.time.delta * xAxisValue / 32767.0;
         }
     }
@@ -46,10 +45,9 @@ static void controller_handle(SDL_Event event)
     {
         // Axe Y
         int yAxisValue = event.jaxis.value;
-        // Vérifiez la "zone morte" autour de zéro
+
         if (abs(yAxisValue) > 8000)
         {
-            // Faites quelque chose avec yAxisValue
             pos[1] -= 500 * global.time.delta * yAxisValue / 32767.0;
         }
     }
@@ -64,21 +62,12 @@ int main(int argc, char *argv[])
     controller_init();
     physics_init();
 
-    u32 body_count = 100;
-
-    for (u32 i = 0; i < body_count; ++i) // Créé des corps aux dimensions et vitesses aléatoires
-    {
-        size_t body_index = physics_body_create(
-            (vec2){rand() % (i32)global.render.width, rand() % (i32)global.render.height},
-            (vec2){rand() % 100, rand() % 100});
-
-        Body *body = physics_body_get(body_index);
-        body->acceleration[0] = rand() % 200 - 100;
-        body->acceleration[1] = rand() % 200 - 100;
-    }
-
     pos[0] = global.render.width * 0.5;
     pos[1] = global.render.height * 0.5;
+
+    AABB test_aabb = {
+        .position = {pos[0], pos[1]},
+        .half_size = {50, 50}};
 
     while (!should_quit)
     {
@@ -115,6 +104,7 @@ int main(int argc, char *argv[])
 
         render_begin();
 
+        render_aabb((float *)&test_aabb, (vec4){1, 1, 1, 0.5});
         render_quad(
             pos,
             (vec2){50, 50},
@@ -125,25 +115,6 @@ int main(int argc, char *argv[])
                 1,
             });
 
-        for (u32 i = 0; i < body_count; ++i) // Pour pas que les corps sortent de l'écran
-        {
-            Body *body = physics_body_get(i);
-            render_quad(body->aabb.position, body->aabb.half_size, (vec4){1, 0, 0, 1});
-
-            if (body->aabb.position[0] > global.render.width | body->aabb.position[0] < 0)
-                body->velocity[0] *= -1;
-            if (body->aabb.position[1] > global.render.height | body->aabb.position[1] < 0)
-                body->velocity[1] *= -1;
-
-            if (body->velocity[0] > 500)
-                body->velocity[0] = 500;
-            if (body->velocity[0] < -500)
-                body->velocity[0] = -500;
-            if (body->velocity[1] > 500)
-                body->velocity[1] = 500;
-            if (body->velocity[1] < -500)
-                body->velocity[1] = -500;
-        }
         render_end();
         time_update_late();
     }
