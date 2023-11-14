@@ -6,6 +6,28 @@
 
 static Physics_State_Internal state;
 
+// Initalise le min et le max d'un aabb
+// min -> sommet bas gauche, max -> sommet haut droite
+void aabb_min_max(vec2 min, vec2 max, AABB aabb)
+{
+    vec2_sub(min, aabb.position, aabb.half_size); // Met dans min la valeur min, retire de la position la half_size
+    vec2_add(max, aabb.position, aabb.half_size);
+}
+
+// En gros ça vérifie si un point est DANS ou touche une boite aabb donné
+bool physics_point_intersect_aabb(vec2 point, AABB aabb)
+{
+    vec2 min, max;
+    aabb_min_max(min, max, aabb); // On récupere le min et max du aabb
+
+    // On retourne si le point touche ou est dans le AABB
+
+    return point[0] >= min[0] && // Le point doit etre au moins apres le minimum sur le plan X
+           point[0] <= max[0] && // ET au moins avant le maximum
+           point[1] >= min[1] && // ET au moins apres le minimum sur le plan Y
+           point[1] <= max[1];   // ET au moins avant le maxmimum
+}
+
 void physics_init(void)
 {
     state.body_list = array_list_create(sizeof(Body), 0); // On crée une liste vide qui va contenir des struct Body

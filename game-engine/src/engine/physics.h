@@ -1,6 +1,8 @@
 #pragma once
 
 #include <linmath.h>
+#include <stdbool.h>
+
 #include "types.h"
 
 // Boite allignée avec les axes de la fenêtre
@@ -29,3 +31,4 @@ void physics_init(void);
 void physics_update(void);
 size_t physics_body_create(vec2 position, vec2 size); // Crée et renvoie l'index d'un Body
 Body *physics_body_get(size_t index);                 // Récupérer un body de la liste à un index donné
+bool physics_point_intersect_aabb(vec2 point, AABB aabb);
