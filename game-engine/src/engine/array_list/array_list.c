@@ -6,7 +6,7 @@
 
 Array_List *array_list_create(size_t item_size, size_t initial_capacity)
 {
-    Array_List *list = malloc(sizeof(Array_List));
+    Array_List *list = malloc(sizeof(Array_List)); // Alloue la mémoire pour la liste dynamique
 
     if (!list)
         ERROR_RETURN(NULL, "Plus assez de memoire pour Array_List\n");

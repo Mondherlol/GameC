@@ -46,3 +46,7 @@ Regarder cette vidéo pour mieux comprendre le principe d'une fonction update : 
 C'est un rectangle aligné avec les axes de l'écran, C'EST A DIRE que les segments hauts et bat du rectangle sont parallèles avec la bordure de la fenêtre de jeu, et les côtés aussi. 
 Il est définit par sa largeur et sa hauteur , comme tout rectangle MAIS aussi par sa position X et Y. On compte la position X et Y à partir du point supérieur gauche.
 Pour une image plus détaillée et comprendre l'intérêt voir ici : http://sdz.tdct.org/sdz/eorie-des-collisions.html
+
+
+## Comprendre les collisions entre AABB :
+https://noonat.github.io/intersect/
