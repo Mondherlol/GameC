@@ -59,33 +59,39 @@ void render_quad(vec2 pos, vec2 size, vec4 color)
 
 void render_line_segment(vec2 start, vec2 end, vec4 color)
 {
-    glUseProgram(state.shader_default);
+    glUseProgram(state.shader_default); // Utiliser le shader par défaut
     glLineWidth(3);
 
-    float x = end[0] - start[0];
-    float y = end[1] - start[1];
+    float x = end[0] - start[0]; // x final - x de départ -> Ca donne la longueur x du trait
+    float y = end[1] - start[1]; // y final - y de départ -> De combien doit -il monter ?
+
+    //              [x  y  z  x  y  z] pour le dessiner ,
     float line[6] = {0, 0, 0, x, y, 0};
 
-    mat4x4 model;
+    mat4x4 model; // Initialiser matrice (elle sert à poser en quelque sorte le point de départ du dessin)
 
-    mat4x4_translate(model, start[0], start[1], 0);
+    // Matrice                 x          y     z
+    mat4x4_translate(model, start[0], start[1], 0); // On la place sur le point de depart
 
+    // On transmet la matrice de transformation (donc avec la position de depart) au shader par défaut
     glUniformMatrix4fv(glGetUniformLocation(state.shader_default, "model"),
                        1,
                        GL_FALSE,
                        &model[0][0]);
 
+    // On transmet la couleur au shader
     glUniform4fv(glGetUniformLocation(state.shader_default, "color"),
                  1,
                  color);
-    glBindTexture(GL_TEXTURE_2D, state.texture_color);
-    glBindVertexArray(state.vao_line);
+    glBindTexture(GL_TEXTURE_2D, state.texture_color); // On dit à OpenGL qu'on va utiliser cette couleur
+    glBindVertexArray(state.vao_line);                 // On dit à OpenGL qu'on va dessiner sur ces points
 
-    glBindBuffer(GL_ARRAY_BUFFER, state.vbo_line);
+    glBindBuffer(GL_ARRAY_BUFFER, state.vbo_line); // Pareil avec le vbo
     glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(line), line);
-    glDrawArrays(GL_LINES, 0, 2);
 
-    glBindVertexArray(0);
+    glDrawArrays(GL_LINES, 0, 2); // Dessiner la ligne
+
+    glBindVertexArray(0); // Retirer le vao_line de l'api OpenGL car c'est bon on a finit avec
 }
 
 void render_quad_line(vec2 pos, vec2 size, vec4 color)

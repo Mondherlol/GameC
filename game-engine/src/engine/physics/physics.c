@@ -6,7 +6,7 @@
 
 static Physics_State_Internal state;
 
-static u32 iterations = 2;
+static u32 iterations = 1;
 static float tic_rate;
 
 // Initalise le min et le max d'un aabb
