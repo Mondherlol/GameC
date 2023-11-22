@@ -5,6 +5,7 @@
         "config.h": "c",
         "global.h": "c",
         "*.rh": "c",
-        "util.h": "c"
+        "util.h": "c",
+        "physics.h": "c"
     }
 }

@@ -36,8 +36,8 @@ void physics_init(void)
     state.body_list = array_list_create(sizeof(Body), 0); // On crée une liste vide qui va contenir des struct Body
     state.static_body_list = array_list_create(sizeof(Static_Body), 0);
 
-    state.gravity = -200;
-    state.terminal_velocity = -10000;
+    state.gravity = -100;
+    state.terminal_velocity = -7000;
 
     tic_rate = 1.f / iterations;
 }
