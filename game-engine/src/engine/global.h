@@ -7,9 +7,9 @@
 
 typedef struct global
 {
-    Render_State render;
-    Config_State config;
-    Input_State input;
+    Render_State render; // Etat du rendu
+    Config_State config; //  Config des touches
+    Input_State input;   // L'etat des touches
     Time_State time;
 } Global;
 

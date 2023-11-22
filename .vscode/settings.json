@@ -4,6 +4,7 @@
         "render_internal.h": "c",
         "config.h": "c",
         "global.h": "c",
-        "*.rh": "c"
+        "*.rh": "c",
+        "util.h": "c"
     }
 }
