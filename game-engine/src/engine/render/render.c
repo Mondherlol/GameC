@@ -3,6 +3,7 @@
 #include "../global.h"
 #include "../render.h"
 #include "../render_internal.h"
+#include "../array_list.h"
 
 static float window_width = 1080;
 static float window_height = 720;
@@ -17,18 +18,26 @@ static u32 vao_line;       // Vao pour dessiner une ligne
 static u32 vbo_line;       // Vbo pour dessiner la ligne
 static u32 shader_default; // ID du shader par défaut
 static u32 texture_color;  // ID de la couleur de texture par défaut
+static u32 vao_batch;
+static u32 vbo_batch;
+static u32 ebo_batch;
+static u32 shader_batch;
+static Array_List *list_batch;
 
 SDL_Window *render_init(void)
 {
     SDL_Window *window = render_init_window(window_width, window_height);
 
     render_init_quad(&vao_quad, &vbo_quad, &ebo_quad); // Initier le rendu du quad
+    render_init_batch_quads(&vao_batch, &vbo_batch, &ebo_batch);
     render_init_line(&vao_line, &vbo_line);
-    render_init_shaders(&shader_default, render_width, render_height);
+    render_init_shaders(&shader_default, &shader_batch, render_width, render_height);
     render_init_color_texture(&texture_color);
 
     glEnable(GL_BLEND);                                // Active le mélange de couleur d'Open GL
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA); // Indique une méthode de mélange de couleur en gros
+
+    list_batch = array_list_create(sizeof(Batch_Vertex), 8);
 
     return window;
 }
@@ -36,9 +45,61 @@ void render_begin(void)
 {
     glClearColor(0.08, 0.1, 0.1, 1); // Couleur d'effacement de l'écran en début de rendu
     glClear(GL_COLOR_BUFFER_BIT);    // Effacer tampon de couleur
+
+    list_batch->len = 0;
 }
+
+static void render_batch(Batch_Vertex *vertices, size_t count, u32 texture_id)
+{
+    glBindBuffer(GL_ARRAY_BUFFER, vbo_batch);
+    glBufferSubData(GL_ARRAY_BUFFER, 0, count * sizeof(Batch_Vertex), vertices);
+
+    glActiveTexture(GL_TEXTURE0);
+    glBindTexture(GL_TEXTURE_2D, texture_id);
+
+    glUseProgram(shader_batch);
+    glBindVertexArray(vao_batch);
+
+    glDrawElements(GL_TRIANGLES, (count >> 2) * 6, GL_UNSIGNED_INT, NULL);
+}
+
+void append_quad(vec2 position, vec2 size, vec4 texture_coordinates, vec4 color)
+{
+    vec4 uvs = {0, 0, 1, 1};
+
+    if (texture_coordinates != NULL)
+    {
+        memcpy(uvs, texture_coordinates, sizeof(vec4));
+    }
+
+    array_list_append(list_batch, &(Batch_Vertex){
+                                      .position = {position[0], position[1]},
+                                      .uvs = {uvs[0], uvs[1]},
+                                      .color = {color[0], color[1], color[2], color[3]},
+                                  });
+
+    array_list_append(list_batch, &(Batch_Vertex){
+                                      .position = {position[0] + size[0], position[1]},
+                                      .uvs = {uvs[2], uvs[1]},
+                                      .color = {color[0], color[1], color[2], color[3]},
+                                  });
+
+    array_list_append(list_batch, &(Batch_Vertex){
+                                      .position = {position[0] + size[0], position[1] + size[1]},
+                                      .uvs = {uvs[2], uvs[3]},
+                                      .color = {color[0], color[1], color[2], color[3]},
+                                  });
+
+    array_list_append(list_batch, &(Batch_Vertex){
+                                      .position = {position[0], position[1] + size[1]},
+                                      .uvs = {uvs[0], uvs[3]},
+                                      .color = {color[0], color[1], color[2], color[3]},
+                                  });
+}
+
 void render_end(SDL_Window *window)
 {
+    render_batch(list_batch->items, list_batch->len, texture_color);
     SDL_GL_SwapWindow(window); // Mettre à jour la fenêtre avec le rendu OPENGL
 }
 void render_quad(vec2 pos, vec2 size, vec4 color)

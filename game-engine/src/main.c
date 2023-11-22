@@ -201,6 +201,19 @@ int main(int argc, char *argv[])
         render_aabb((float *)physics_body_get(entity_get(entity_a_id)->body_id), WHITE);
         render_aabb((float *)physics_body_get(entity_get(entity_b_id)->body_id), WHITE);
 
+        for (u32 i = 0; i < 10000; ++i)
+        {
+            vec4 color = {
+                (rand() % 255) / 255.0,
+                (rand() % 255) / 255.0,
+                (rand() % 255) / 255.0,
+                (rand() % 255) / 255.0,
+            };
+            append_quad((vec2){rand() % 640, rand() % 360},
+                        (vec2){rand() % 100, rand() % 100},
+                        NULL,
+                        color);
+        }
         render_end(window);
 
         player_color[0] = 0;
