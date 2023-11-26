@@ -11,8 +11,20 @@
 #include "engine/time.h"
 #include "engine/input.h"
 #include "engine/physics.h"
+#include "engine/entity.h"
+#include "engine/render.h"
+
+typedef enum collision_layer
+{
+    COLLISON_LAYER_PLAYER = 1,
+    COLLISON_LAYER_ENEMY = 1 << 1,
+    COLLISON_LAYER_TERRAIN = 1 << 2,
+} Collision_Layer;
 
 static bool should_quit = false;
+vec4 player_color = {0, 1, 1, 1};
+bool player_is_grounded = false;
+
 static vec2 pos;
 
 static void input_handle(Body *body_player)
@@ -25,26 +37,52 @@ static void input_handle(Body *body_player)
 
     if (global.input.right)
     {
-        velx += 1000;
+        velx += 600;
     }
 
     if (global.input.left)
     {
-        velx -= 1000;
+        velx -= 600;
     }
 
-    if (global.input.up)
+    if (global.input.up && player_is_grounded)
     {
-        vely = 4000;
-    }
-
-    if (global.input.down)
-    {
-        vely -= 800;
+        player_is_grounded = false;
+        vely = 2000;
     }
 
     body_player->velocity[0] = velx;
     body_player->velocity[1] = vely;
+}
+
+void player_on_hit(Body *self, Body *other, Hit hit)
+{
+    if (other->collision_layer == COLLISON_LAYER_ENEMY)
+    {
+        player_color[0] = 1;
+        player_color[2] = 0;
+    }
+}
+
+void player_on_hit_static(Body *self, Static_Body *other, Hit hit)
+{
+    if (hit.normal[1] > 0)
+    {
+        player_is_grounded = true;
+    }
+}
+
+void ennemy_on_hit_static(Body *self, Static_Body *other, Hit hit)
+{
+    if (hit.normal[0] > 0) // Le fait changer de direction lorsqu'il cogne un mur
+    {
+        self->velocity[0] = 400;
+    }
+
+    if (hit.normal[0] < 0)
+    {
+        self->velocity[0] = -400;
+    }
 }
 
 static void controller_handle(SDL_Event event)
@@ -74,25 +112,39 @@ static void controller_handle(SDL_Event event)
 
 int main(int argc, char *argv[])
 {
-    puts("Jeu compile avec succes !");
     time_init(60);
     config_init();
-    render_init();
+    SDL_Window *window = render_init();
     controller_init();
     physics_init();
+    entity_init();
 
     SDL_ShowCursor(false); // Cacher le curseur
 
-    float width = global.render.width;
-    float height = global.render.height;
+    u8 ennemy_mask = COLLISON_LAYER_ENEMY | COLLISON_LAYER_TERRAIN;
+    u8 player_mask = COLLISON_LAYER_ENEMY | COLLISON_LAYER_TERRAIN;
 
-    u32 body_id = physics_body_create((vec2){width / 2, height / 3}, (vec2){50, 50});
+    size_t player_id = entity_create((vec2){100, 200},
+                                     (vec2){24, 24},
+                                     (vec2){0, 0},
+                                     COLLISON_LAYER_PLAYER,
+                                     player_mask,
+                                     player_on_hit,
+                                     player_on_hit_static);
 
-    u32 static_body_a_id = physics_static_body_create((vec2){width * 0.5 - 25, height - 25}, (vec2){width - 50, 50});
-    u32 static_body_b_id = physics_static_body_create((vec2){width - 25, height * 0.5 + 25}, (vec2){50, height - 50});
-    u32 static_body_c_id = physics_static_body_create((vec2){width * 0.5 + 25, 25}, (vec2){width - 50, 50});
-    u32 static_body_d_id = physics_static_body_create((vec2){25, height * 0.5 - 25}, (vec2){50, height - 50});
-    u32 static_body_e_id = physics_static_body_create((vec2){width * 0.5, height * 0.5}, (vec2){150, 150});
+    i32 window_width, window_height;
+    SDL_GetWindowSize(window, &window_width, &window_height);
+    float width = window_width / render_get_scale();
+    float height = window_height / render_get_scale();
+
+    u32 static_body_a_id = physics_static_body_create((vec2){width * 0.5 - 12.5, height - 12.5}, (vec2){width - 25, 25}, COLLISON_LAYER_TERRAIN);
+    u32 static_body_b_id = physics_static_body_create((vec2){width - 12.5, height * 0.5 + 12.5}, (vec2){25, height - 25}, COLLISON_LAYER_TERRAIN);
+    u32 static_body_c_id = physics_static_body_create((vec2){width * 0.5 + 12.5, 12.5}, (vec2){width - 25, 25}, COLLISON_LAYER_TERRAIN);
+    u32 static_body_d_id = physics_static_body_create((vec2){12.5, height * 0.5 - 12.5}, (vec2){25, height - 25}, COLLISON_LAYER_TERRAIN);
+    u32 static_body_e_id = physics_static_body_create((vec2){width * 0.5, height * 0.5}, (vec2){62.5, 62.5}, COLLISON_LAYER_TERRAIN);
+
+    size_t entity_a_id = entity_create((vec2){200, 200}, (vec2){25, 25}, (vec2){400, 0}, COLLISON_LAYER_ENEMY, ennemy_mask, NULL, ennemy_on_hit_static);
+    size_t entity_b_id = entity_create((vec2){300, 300}, (vec2){25, 25}, (vec2){400, 0}, COLLISON_LAYER_ENEMY, ennemy_mask, NULL, ennemy_on_hit_static);
 
     while (!should_quit)
     {
@@ -115,7 +167,7 @@ int main(int argc, char *argv[])
             case SDL_JOYBUTTONDOWN:
                 // Bouton de la manette enfoncé
                 int buttonIndex = event.jbutton.button;
-                printf("Un bouton a ete appuiyé.");
+                printf("Un bouton a ete appuyé.");
                 break;
             default:
                 break;
@@ -125,7 +177,9 @@ int main(int argc, char *argv[])
         input_update();
 
         // On récupére les body à nouveau car si la liste est pleine on peut plus récupérer
-        Body *body_player = physics_body_get(body_id);
+
+        Entity *player = entity_get(player_id);
+        Body *body_player = physics_body_get(player->body_id);
         Static_Body *static_body_a = physics_static_body_get(static_body_a_id);
         Static_Body *static_body_b = physics_static_body_get(static_body_b_id);
         Static_Body *static_body_c = physics_static_body_get(static_body_c_id);
@@ -142,9 +196,29 @@ int main(int argc, char *argv[])
         render_aabb((float *)static_body_c, WHITE);
         render_aabb((float *)static_body_d, WHITE);
         render_aabb((float *)static_body_e, WHITE);
-        render_aabb((float *)body_player, CYAN);
+        render_aabb((float *)body_player, player_color);
 
-        render_end();
+        render_aabb((float *)physics_body_get(entity_get(entity_a_id)->body_id), WHITE);
+        render_aabb((float *)physics_body_get(entity_get(entity_b_id)->body_id), WHITE);
+
+        for (u32 i = 0; i < 10000; ++i)
+        {
+            vec4 color = {
+                (rand() % 255) / 255.0,
+                (rand() % 255) / 255.0,
+                (rand() % 255) / 255.0,
+                (rand() % 255) / 255.0,
+            };
+            append_quad((vec2){rand() % 640, rand() % 360},
+                        (vec2){rand() % 100, rand() % 100},
+                        NULL,
+                        color);
+        }
+        render_end(window);
+
+        player_color[0] = 0;
+        player_color[2] = 1;
+
         time_update_late();
     }
     return EXIT_SUCCESS;

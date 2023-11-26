@@ -5,6 +5,13 @@
 
 #include "types.h"
 
+typedef struct hit Hit;
+typedef struct body Body;
+typedef struct static_body Static_Body;
+
+typedef void (*On_Hit)(Body *self, Body *other, Hit hit);               // Lorsqu'une collision a lieu entre deux Body mobile
+typedef void (*On_Hit_Static)(Body *self, Static_Body *other, Hit hit); // Pareil mais entre un body static et un un mobile
+
 // Boite allignée avec les axes de la fenêtre
 typedef struct aabb
 {
@@ -20,36 +27,44 @@ typedef struct aabb
 */
 
 // Un corps (Body) qui représente un objet de jeu affecté par la physique
-typedef struct body
+struct body
 {
     AABB aabb;         // Boite englobant le corps
     vec2 velocity;     // Sa vélocité -> La vitesse de l'obet dans une direction
     vec2 acceleration; // Son acceleration -> C'est les variations de vitesse et de direction à venir de l'objet en gros
-} Body;
+    On_Hit on_hit;
+    On_Hit_Static on_hit_static;
+    u8 collision_layer; // Plan de collision, en gros quelle catégorie de collision peut il donner
+    u8 collision_mask;  // Pour définir quelles collisions sont autorisées
+};
 
-typedef struct static_body
+// Un corp statique pour les objets innanimés (murs, etc...)
+struct static_body
 {
     AABB aabb;
-} Static_Body;
+    u8 collision_layer;
+};
 
-typedef struct hit
+struct hit
 {
-    bool is_hit;
-    float time;
-    vec2 position;
-    vec2 normal;
-} Hit;
+    size_t other_id; // Id de l'autre body avec qui y a eu collision
+    bool is_hit;     // Y a t-il eu une collision
+    float time;      // Temps de la collision
+    vec2 position;   // Position de la collision
+    vec2 normal;     // Vecteur qui pointe vers la direction perpendiculaire à la surface de l'impact
+    //                  Ca permet de determiner la reflexion du corps lors de l'impact
+};
 
 void physics_init(void);
 void physics_update(void);
-size_t physics_body_create(vec2 position, vec2 size); // Crée et renvoie l'index d'un Body
-Body *physics_body_get(size_t index);                 // Récupérer un body de la liste à un index donné
+size_t physics_body_create(vec2 position, vec2 size, vec2 velocity, u8 collision_layer, u8 collision_mask, On_Hit on_hit, On_Hit_Static on_hit_static); // Crée et renvoie l'index d'un Body
+Body *physics_body_get(size_t index);                                                                                                                   // Récupérer un body de la liste à un index donné
 
-size_t physics_static_body_create(vec2 position, vec2 size); // Crée un body static et renvoie son index
-Static_Body *physics_static_body_get(size_t index);          // Récupére un static body à un index donné
+size_t physics_static_body_create(vec2 position, vec2 size, u8 collision_layer); // Crée un body static et renvoie son index
+Static_Body *physics_static_body_get(size_t index);                              // Récupére un static body à un index donné
 
-bool physics_point_intersect_aabb(vec2 point, AABB aabb);
-bool physics_aabb_intersect_aabb(AABB a, AABB b);
+bool physics_point_intersect_aabb(vec2 point, AABB aabb); // Collision entre un point et une boite
+bool physics_aabb_intersect_aabb(AABB a, AABB b);         // Collision entre deux boites
 AABB aabb_minkowski_difference(AABB a, AABB b);
 void aabb_penetration_vector(vec2 r, AABB aabb);
 void aabb_min_max(vec2 min, vec2 max, AABB aabb);
