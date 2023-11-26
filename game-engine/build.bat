@@ -7,8 +7,7 @@ set physics=src\engine\physics\physics.c
 set array_list=src\engine\array_list\array_list.c
 set entity=src\engine\entity\entity.c
 set files=src\glad.c src\main.c src\engine\global.c %render% %io% %config% %input% %time% %physics% %array_list% %entity%
-set libs=../lib/SDL2main.lib ../lib/SDL2.lib ../lib/libSDL2_ttf.a ../lib/libSDL2_ttf.la ../lib/libSDL2_ttf.dll.a ../lib/pkgconfig/SDL2_ttf.pc 
-
-
+@REM set libs=../lib/SDL2main.lib ../lib/SDL2.lib ../lib/libSDL2_ttf.a ../lib/libSDL2_ttf.la ../lib/libSDL2_ttf.dll.a ../lib/pkgconfig/SDL2_ttf.pc 
+set libs=../lib/SDL2main.lib ../lib/SDL2.lib 
 
 CL /Zi /I ../include %files% /link %libs% /OUT:mygame.exe
