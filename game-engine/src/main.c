@@ -14,6 +14,9 @@
 #include "engine/entity.h"
 #include "engine/render.h"
 
+#include <SDL2/SDL_ttf.h>
+
+
 typedef enum collision_layer
 {
     COLLISON_LAYER_PLAYER = 1,
@@ -109,6 +112,26 @@ static void controller_handle(SDL_Event event)
         }
     }
 }
+//ecrire texte en c
+TTF_Font* loadFont(const char* fontPath, int fontSize) {
+    TTF_Font* font = TTF_OpenFont(fontPath, fontSize);
+    if (!font) {
+        fprintf(stderr, "Failed to load font! SDL_ttf Error: %s\n", TTF_GetError());
+    }
+    return font;
+}
+void renderText(SDL_Renderer* renderer, TTF_Font* font, const char* text, int x, int y) {
+    SDL_Color textColor = {255, 255, 255};  // Couleur du texte blanc
+    SDL_Surface* textSurface = TTF_RenderText_Blended(font, text, textColor);
+    SDL_Texture* textTexture = SDL_CreateTextureFromSurface(renderer, textSurface);
+
+    SDL_Rect destRect = {x, y, textSurface->w, textSurface->h};
+    SDL_RenderCopy(renderer, textTexture, NULL, &destRect);
+
+    SDL_FreeSurface(textSurface);
+    SDL_DestroyTexture(textTexture);
+}
+
 
 int main(int argc, char *argv[])
 {
@@ -120,6 +143,11 @@ int main(int argc, char *argv[])
     entity_init();
 
     SDL_ShowCursor(false); // Cacher le curseur
+ 
+
+    char * path="C:/Windows/Fonts/Arial.TTF";
+    TTF_Font* font = loadFont(path, 24);
+
 
     u8 ennemy_mask = COLLISON_LAYER_ENEMY | COLLISON_LAYER_TERRAIN;
     u8 player_mask = COLLISON_LAYER_ENEMY | COLLISON_LAYER_TERRAIN;
@@ -214,12 +242,22 @@ int main(int argc, char *argv[])
         //                 NULL,
         //                 color);
         // }
-        render_end(window);
+         SDL_Renderer* renderer = SDL_GetRenderer(window);
+        SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);
+        SDL_RenderClear(renderer);
 
+        // Affiche du texte à la position (100, 100)
+        renderText(renderer, font, "HELLO SARRA!", 100, 100);
+
+        SDL_RenderPresent(renderer);
+        render_end(window);
+       
         player_color[0] = 0;
         player_color[2] = 1;
 
         time_update_late();
     }
+     TTF_CloseFont(font);
+    TTF_Quit();
     return EXIT_SUCCESS;
 }
