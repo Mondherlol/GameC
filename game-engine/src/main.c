@@ -16,7 +16,6 @@
 
 #include <SDL2/SDL_ttf.h>
 
-
 typedef enum collision_layer
 {
     COLLISON_LAYER_PLAYER = 1,
@@ -112,18 +111,24 @@ static void controller_handle(SDL_Event event)
         }
     }
 }
-//ecrire texte en c
-TTF_Font* loadFont(const char* fontPath, int fontSize) {
-    TTF_Font* font = TTF_OpenFont(fontPath, fontSize);
-    if (!font) {
+// ecrire texte en c
+TTF_Font *loadFont(const char *fontPath, int fontSize)
+{
+    TTF_Font *font = TTF_OpenFont(fontPath, fontSize);
+    if (!font)
+    {
+
         fprintf(stderr, "Failed to load font! SDL_ttf Error: %s\n", TTF_GetError());
     }
+
+    printf("\nFont loaded");
     return font;
 }
-void renderText(SDL_Renderer* renderer, TTF_Font* font, const char* text, int x, int y) {
-    SDL_Color textColor = {255, 255, 255};  // Couleur du texte blanc
-    SDL_Surface* textSurface = TTF_RenderText_Blended(font, text, textColor);
-    SDL_Texture* textTexture = SDL_CreateTextureFromSurface(renderer, textSurface);
+void renderText(SDL_Renderer *renderer, TTF_Font *font, const char *text, int x, int y)
+{
+    SDL_Color textColor = {255, 255, 255}; // Couleur du texte blanc
+    SDL_Surface *textSurface = TTF_RenderText_Blended(font, text, textColor);
+    SDL_Texture *textTexture = SDL_CreateTextureFromSurface(renderer, textSurface);
 
     SDL_Rect destRect = {x, y, textSurface->w, textSurface->h};
     SDL_RenderCopy(renderer, textTexture, NULL, &destRect);
@@ -131,7 +136,6 @@ void renderText(SDL_Renderer* renderer, TTF_Font* font, const char* text, int x,
     SDL_FreeSurface(textSurface);
     SDL_DestroyTexture(textTexture);
 }
-
 
 int main(int argc, char *argv[])
 {
@@ -143,11 +147,16 @@ int main(int argc, char *argv[])
     entity_init();
 
     SDL_ShowCursor(false); // Cacher le curseur
- 
 
-    char * path="C:/Windows/Fonts/Arial.TTF";
-    TTF_Font* font = loadFont(path, 24);
+    char *path = "C:/Windows/Fonts/Arial.TTF";
 
+    if (TTF_Init() == -1)
+    {
+        fprintf(stderr, "SDL_ttf could not initialize! SDL_ttf Error: %s\n", TTF_GetError());
+        // return -1;
+    }
+
+    TTF_Font *font = loadFont(path, 100);
 
     u8 ennemy_mask = COLLISON_LAYER_ENEMY | COLLISON_LAYER_TERRAIN;
     u8 player_mask = COLLISON_LAYER_ENEMY | COLLISON_LAYER_TERRAIN;
@@ -176,6 +185,7 @@ int main(int argc, char *argv[])
 
     while (!should_quit)
     {
+
         time_update();
 
         SDL_Event event;
@@ -215,19 +225,19 @@ int main(int argc, char *argv[])
         Static_Body *static_body_e = physics_static_body_get(static_body_e_id);
 
         input_handle(body_player);
-        physics_update();
+        // physics_update();
 
         render_begin();
 
-        render_aabb((float *)static_body_a, WHITE);
-        render_aabb((float *)static_body_b, WHITE);
-        render_aabb((float *)static_body_c, WHITE);
-        render_aabb((float *)static_body_d, WHITE);
-        render_aabb((float *)static_body_e, WHITE);
-        render_aabb((float *)body_player, player_color);
+        // render_aabb((float *)static_body_a, WHITE);
+        // render_aabb((float *)static_body_b, WHITE);
+        // render_aabb((float *)static_body_c, WHITE);
+        // render_aabb((float *)static_body_d, WHITE);
+        // render_aabb((float *)static_body_e, WHITE);
+        // render_aabb((float *)body_player, player_color);
 
-        render_aabb((float *)physics_body_get(entity_get(entity_a_id)->body_id), WHITE);
-        render_aabb((float *)physics_body_get(entity_get(entity_b_id)->body_id), WHITE);
+        // render_aabb((float *)physics_body_get(entity_get(entity_a_id)->body_id), WHITE);
+        // render_aabb((float *)physics_body_get(entity_get(entity_b_id)->body_id), WHITE);
 
         // for (u32 i = 0; i < 10000; ++i)
         // {
@@ -242,22 +252,28 @@ int main(int argc, char *argv[])
         //                 NULL,
         //                 color);
         // }
-         SDL_Renderer* renderer = SDL_GetRenderer(window);
+
+        // SDL_Renderer *renderer = SDL_GetRenderer(window);
+        SDL_Renderer *renderer = SDL_CreateRenderer(window, -1, SDL_RENDERER_ACCELERATED);
+
+        //  //TEXTE
         SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);
         SDL_RenderClear(renderer);
 
         // Affiche du texte à la position (100, 100)
-        renderText(renderer, font, "HELLO SARRA!", 100, 100);
+        renderText(renderer, font, "HELLO SARRA!", 300, 300);
 
         SDL_RenderPresent(renderer);
+        SDL_GL_SwapWindow(window);
+
         render_end(window);
-       
+
         player_color[0] = 0;
         player_color[2] = 1;
 
         time_update_late();
     }
-     TTF_CloseFont(font);
+    TTF_CloseFont(font);
     TTF_Quit();
     return EXIT_SUCCESS;
 }
