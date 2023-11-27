@@ -14,8 +14,6 @@
 #include "engine/entity.h"
 #include "engine/render.h"
 
-#include <SDL2/SDL_ttf.h>
-
 typedef enum collision_layer
 {
     COLLISON_LAYER_PLAYER = 1,
