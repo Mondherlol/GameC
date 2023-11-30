@@ -1,15 +1,20 @@
 #include <glad/glad.h>
+#define STB_IMAGE_IMPLEMENTATION // D'apres le readme du github de STB
+#include <stb_image.h>
+
 
 #include "../global.h"
 #include "../render.h"
 #include "../render_internal.h"
 #include "../array_list.h"
+#include "../util.h"
+
 
 static float window_width = 1080;
 static float window_height = 720;
-static float render_width = 1080;
-static float render_height = 720;
-static float scale = 1;
+static float render_width = 720;
+static float render_height = 480;
+static float scale = 1.5;
 
 static u32 vao_quad;       // Vertex Array Object pour dessiner un quad  - > OU Tableau d'array
 static u32 vbo_quad;       // Vectex Buffer Object pour dessiner un quad
@@ -38,7 +43,9 @@ SDL_Window *render_init(void)
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA); // Indique une méthode de mélange de couleur en gros
 
     list_batch = array_list_create(sizeof(Batch_Vertex), 8);
-
+    
+    stbi_set_flip_vertically_on_load(1); // Retourner les images au chargement car sinon elles sont inversées
+    
     return window;
 }
 void render_begin(void)
@@ -63,7 +70,7 @@ static void render_batch(Batch_Vertex *vertices, size_t count, u32 texture_id)
     glDrawElements(GL_TRIANGLES, (count >> 2) * 6, GL_UNSIGNED_INT, NULL);
 }
 
-void append_quad(vec2 position, vec2 size, vec4 texture_coordinates, vec4 color)
+static void append_quad(vec2 position, vec2 size, vec4 texture_coordinates, vec4 color)
 {
     vec4 uvs = {0, 0, 1, 1};
 
@@ -97,9 +104,10 @@ void append_quad(vec2 position, vec2 size, vec4 texture_coordinates, vec4 color)
                                   });
 }
 
-void render_end(SDL_Window *window)
+void render_end(SDL_Window *window, u32 batch_texture_id)
 {
-    render_batch(list_batch->items, list_batch->len, texture_color);
+    render_batch(list_batch->items, list_batch->len, batch_texture_id);
+
     SDL_GL_SwapWindow(window); // Mettre à jour la fenêtre avec le rendu OPENGL
 }
 void render_quad(vec2 pos, vec2 size, vec4 color)
@@ -193,6 +201,54 @@ void render_aabb(float *aabb, vec4 color)
 
     render_quad_line(&aabb[0], size, color);
 }
+
+void render_sprite_sheet_init(Sprite_Sheet *sprite_sheet, const char *path, float cell_width, float cell_height)
+{
+    glGenTextures(1, &sprite_sheet->texture_id);
+    glActiveTexture(GL_TEXTURE0);
+    glBindTexture(GL_TEXTURE_2D, sprite_sheet->texture_id);
+
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+
+    int width, height, channel_count;
+    u8 *image_data = stbi_load(path, &width, &height, &channel_count, 0);
+    if (!image_data)
+    {
+        ERROR_EXIT("Erreur lors du chargement de l'image :  %s\n", path);
+    }
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, image_data);
+    stbi_image_free(image_data);
+
+    sprite_sheet->width = (float)width;
+    sprite_sheet->height = (float)height;
+    sprite_sheet->cell_width = cell_width;
+    sprite_sheet->cell_height = cell_height;
+}
+static void calculate_sprite_texture_coordinates(vec4 result, float row, float column, float texture_width, float texture_height, float cell_width, float cell_height)
+{
+    float w = 1.0 / (texture_width / cell_width);
+    float h = 1.0 / (texture_height / cell_height);
+    float x = column * w;
+    float y = row * h;
+    result[0] = x;
+    result[1] = y;
+    result[2] = x + w;
+    result[3] = y + h;
+}
+void render_sprite_sheet_frame(Sprite_Sheet *sprite_sheet, float row, float column, vec2 position)
+{
+    vec4 uvs;
+    calculate_sprite_texture_coordinates(uvs, row, column, sprite_sheet->width, sprite_sheet->height, sprite_sheet->cell_width, sprite_sheet->cell_height);
+
+    vec2 size = {sprite_sheet->cell_width, sprite_sheet->cell_height};
+    vec2 bottom_left = {position[0] - size[0] * 0.5, position[1] - size[1] * 0.5};
+    append_quad(bottom_left, size, uvs, (vec4){1, 1, 1, 1});
+}
+
+
 
 float render_get_scale()
 {
