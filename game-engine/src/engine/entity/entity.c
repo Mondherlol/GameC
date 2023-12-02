@@ -12,6 +12,7 @@ size_t entity_create(vec2 position, vec2 size, vec2 velocity, u8 collision_layer
 {
     Entity entity = {
         .body_id = physics_body_create(position, size, velocity, collision_layer, collision_mask, on_hit, on_hit_static),
+        .animation_id = (size_t)-1,
         .is_active = true,
     };
 

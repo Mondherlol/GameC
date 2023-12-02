@@ -1,5 +1,6 @@
 #pragma once
 
+#include <stdbool.h>
 #include <SDL2/SDL.h>
 #include <linmath.h> //Librairie qui sert à avoir des vecteurs (vec2, vec4,...)
 #include "types.h"
@@ -36,4 +37,4 @@ float render_get_scale();
 
 // void append_quad(vec2 position, vec2 size, vec4 texture_coordinates, vec4 color);
 void render_sprite_sheet_init(Sprite_Sheet *sprite_sheet, const char *path, float cell_width, float cell_height);
-void render_sprite_sheet_frame(Sprite_Sheet *sprite_sheet, float row, float column, vec2 position);
+void render_sprite_sheet_frame(Sprite_Sheet *sprite_sheet, float row, float column, vec2 position, bool is_flipped);

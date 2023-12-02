@@ -2,19 +2,17 @@
 #define STB_IMAGE_IMPLEMENTATION // D'apres le readme du github de STB
 #include <stb_image.h>
 
-
 #include "../global.h"
 #include "../render.h"
 #include "../render_internal.h"
 #include "../array_list.h"
 #include "../util.h"
 
-
-static float window_width = 1080;
+static float window_width = 1280;
 static float window_height = 720;
-static float render_width = 720;
-static float render_height = 480;
-static float scale = 1.5;
+static float render_width = 640;
+static float render_height = 360;
+static float scale = 2;
 
 static u32 vao_quad;       // Vertex Array Object pour dessiner un quad  - > OU Tableau d'array
 static u32 vbo_quad;       // Vectex Buffer Object pour dessiner un quad
@@ -43,9 +41,9 @@ SDL_Window *render_init(void)
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA); // Indique une méthode de mélange de couleur en gros
 
     list_batch = array_list_create(sizeof(Batch_Vertex), 8);
-    
+
     stbi_set_flip_vertically_on_load(1); // Retourner les images au chargement car sinon elles sont inversées
-    
+
     return window;
 }
 void render_begin(void)
@@ -238,17 +236,22 @@ static void calculate_sprite_texture_coordinates(vec4 result, float row, float c
     result[2] = x + w;
     result[3] = y + h;
 }
-void render_sprite_sheet_frame(Sprite_Sheet *sprite_sheet, float row, float column, vec2 position)
+void render_sprite_sheet_frame(Sprite_Sheet *sprite_sheet, float row, float column, vec2 position, bool is_flipped)
 {
     vec4 uvs;
     calculate_sprite_texture_coordinates(uvs, row, column, sprite_sheet->width, sprite_sheet->height, sprite_sheet->cell_width, sprite_sheet->cell_height);
+
+    if (is_flipped)
+    {
+        float tmp = uvs[0];
+        uvs[0] = uvs[2];
+        uvs[2] = tmp;
+    }
 
     vec2 size = {sprite_sheet->cell_width, sprite_sheet->cell_height};
     vec2 bottom_left = {position[0] - size[0] * 0.5, position[1] - size[1] * 0.5};
     append_quad(bottom_left, size, uvs, (vec4){1, 1, 1, 1});
 }
-
-
 
 float render_get_scale()
 {

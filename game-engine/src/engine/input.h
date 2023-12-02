@@ -18,11 +18,20 @@ typedef enum key_state
 
 typedef struct input_state
 {
+    // Le clavier
     Key_State left;
     Key_State right;
     Key_State up;
     Key_State down;
     Key_State escape;
+
+    // La manette
+    Key_State joystick_left_controller;
+    Key_State joystick_right_controller;
+    Key_State left_controller;
+    Key_State right_controller;
+    Key_State jump_controller;
+    Key_State start_controller;
 
 } Input_State;
 

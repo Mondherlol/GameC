@@ -13,6 +13,7 @@
 #include "engine/physics.h"
 #include "engine/entity.h"
 #include "engine/render.h"
+#include "engine/animation.h"
 
 typedef enum collision_layer
 {
@@ -29,26 +30,26 @@ static vec2 pos;
 
 static void input_handle(Body *body_player)
 {
-    if (global.input.escape)
+    if (global.input.escape || global.input.start_controller)
         should_quit = true;
 
     float velx = 0;
     float vely = body_player->velocity[1];
 
-    if (global.input.right)
+    if (global.input.right || global.input.right_controller || global.input.joystick_right_controller)
     {
-        velx += 600;
+        velx += 400;
     }
 
-    if (global.input.left)
+    if (global.input.left || global.input.left_controller || global.input.joystick_left_controller)
     {
-        velx -= 600;
+        velx -= 400;
     }
 
-    if (global.input.up && player_is_grounded)
+    if ((global.input.up || global.input.jump_controller) && player_is_grounded)
     {
         player_is_grounded = false;
-        vely = 2000;
+        vely = 1200;
     }
 
     body_player->velocity[0] = velx;
@@ -85,39 +86,16 @@ void ennemy_on_hit_static(Body *self, Static_Body *other, Hit hit)
     }
 }
 
-static void controller_handle(SDL_Event event)
-{
-    if (event.jaxis.axis == 0)
-    {
-        // Axe X
-        int xAxisValue = event.jaxis.value;
-
-        // Vérifier la "zone morte" autour de zéro
-        if (abs(xAxisValue) > 8000)
-        {
-            pos[0] += 500 * global.time.delta * xAxisValue / 32767.0;
-        }
-    }
-    else if (event.jaxis.axis == 1)
-    {
-        // Axe Y
-        int yAxisValue = event.jaxis.value;
-
-        if (abs(yAxisValue) > 8000)
-        {
-            pos[1] -= 500 * global.time.delta * yAxisValue / 32767.0;
-        }
-    }
-}
-
 int main(int argc, char *argv[])
 {
+
     time_init(60);
     config_init();
     SDL_Window *window = render_init();
     controller_init();
     physics_init();
     entity_init();
+    animation_init();
 
     SDL_ShowCursor(false); // Cacher le curseur
 
@@ -137,17 +115,71 @@ int main(int argc, char *argv[])
     float width = window_width / render_get_scale();
     float height = window_height / render_get_scale();
 
+    // Murs
     u32 static_body_a_id = physics_static_body_create((vec2){width * 0.5 - 12.5, height - 12.5}, (vec2){width - 25, 25}, COLLISON_LAYER_TERRAIN);
     u32 static_body_b_id = physics_static_body_create((vec2){width - 12.5, height * 0.5 + 12.5}, (vec2){25, height - 25}, COLLISON_LAYER_TERRAIN);
     u32 static_body_c_id = physics_static_body_create((vec2){width * 0.5 + 12.5, 12.5}, (vec2){width - 25, 25}, COLLISON_LAYER_TERRAIN);
     u32 static_body_d_id = physics_static_body_create((vec2){12.5, height * 0.5 - 12.5}, (vec2){25, height - 25}, COLLISON_LAYER_TERRAIN);
-    u32 static_body_e_id = physics_static_body_create((vec2){width * 0.5, height * 0.5}, (vec2){62.5, 62.5}, COLLISON_LAYER_TERRAIN);
 
+    // Plateformes
+    u32 static_body_e_id = physics_static_body_create(
+        (vec2){width * 0.5, height * 0.65},
+        (vec2){62.5, 62.5},
+        COLLISON_LAYER_TERRAIN);
+
+    u32 platform_b_id = physics_static_body_create(
+        (vec2){width * 0.1, height * 0.25}, // Position
+        (vec2){60, 10},                     // Taille
+        COLLISON_LAYER_TERRAIN              // Masque de collision
+    );
+
+    u32 platform_c_id = physics_static_body_create(
+        (vec2){width * 0.9, height * 0.25}, // Position
+        (vec2){60, 10},                     // Taille
+        COLLISON_LAYER_TERRAIN              // Masque de collision
+    );
+
+    u32 platform_d_id = physics_static_body_create(
+        (vec2){width * 0.4, height * 0.43}, // Position
+        (vec2){50, 10},                     // Taille
+        COLLISON_LAYER_TERRAIN              // Masque de collision
+    );
+
+    u32 platform_e_id = physics_static_body_create(
+        (vec2){width * 0.6, height * 0.43}, // Position
+        (vec2){50, 10},                     // Taille
+        COLLISON_LAYER_TERRAIN              // Masque de collision
+    );
+    // Ennemies
     size_t entity_a_id = entity_create((vec2){200, 200}, (vec2){25, 25}, (vec2){400, 0}, COLLISON_LAYER_ENEMY, ennemy_mask, NULL, ennemy_on_hit_static);
     size_t entity_b_id = entity_create((vec2){300, 300}, (vec2){25, 25}, (vec2){400, 0}, COLLISON_LAYER_ENEMY, ennemy_mask, NULL, ennemy_on_hit_static);
 
     Sprite_Sheet sprite_sheet_player;
-    render_sprite_sheet_init(&sprite_sheet_player, "assets/player.png", 24, 24);
+    render_sprite_sheet_init(&sprite_sheet_player, "assets/player.png", 24, 24); // Charger spritesheet joueur
+
+    // Definir animation de deplacement
+    size_t adef_player_walk_id = animation_definition_create(
+        &sprite_sheet_player,                         // Spritesheet
+        (float[]){0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1}, // Durée
+        (u8[]){0, 0, 0, 0, 0, 0, 0},                  // Ligne
+        (u8[]){1, 2, 3, 4, 5, 6, 7},                  // Colonne
+        7                                             // Nbr de frames
+    );
+
+    // Definir animation d'idle
+    size_t adef_player_idle_id = animation_definition_create(
+        &sprite_sheet_player, // Spritesheet
+        (float[]){0},         // Durée
+        (u8[]){2},            // Ligne
+        (u8[]){0},            // colonne
+        1                     // Nombre de frames
+    );
+    //                                             Def animation      loop ?
+    size_t anim_player_walk_id = animation_create(adef_player_walk_id, true);
+    size_t anim_player_idle_id = animation_create(adef_player_idle_id, false);
+
+    Entity *player = entity_get(player_id);
+    player->animation_id = anim_player_idle_id;
 
     while (!should_quit)
     {
@@ -163,35 +195,38 @@ int main(int argc, char *argv[])
             case SDL_QUIT:
                 should_quit = true;
                 break;
-            case SDL_JOYAXISMOTION:
-                // Mouvement de l'axe de la manette
-                controller_handle(event);
-                break;
-
-            case SDL_JOYBUTTONDOWN:
-                // Bouton de la manette enfoncé
-                int buttonIndex = event.jbutton.button;
-                printf("Un bouton a ete appuyé.");
-                break;
             default:
                 break;
             }
         }
 
-        input_update();
-
-        // On récupére les body à nouveau car si la liste est pleine on peut plus récupérer
-
         Entity *player = entity_get(player_id);
         Body *body_player = physics_body_get(player->body_id);
+
+        if (body_player->velocity[0] != 0)
+        {
+            player->animation_id = anim_player_walk_id;
+        }
+        else
+        {
+            player->animation_id = anim_player_idle_id;
+        }
+
         Static_Body *static_body_a = physics_static_body_get(static_body_a_id);
         Static_Body *static_body_b = physics_static_body_get(static_body_b_id);
         Static_Body *static_body_c = physics_static_body_get(static_body_c_id);
         Static_Body *static_body_d = physics_static_body_get(static_body_d_id);
         Static_Body *static_body_e = physics_static_body_get(static_body_e_id);
 
+        Static_Body *static_body_platform_b = physics_static_body_get(platform_b_id);
+        Static_Body *static_body_platform_c = physics_static_body_get(platform_c_id);
+        Static_Body *static_body_platform_d = physics_static_body_get(platform_d_id);
+        Static_Body *static_body_platform_e = physics_static_body_get(platform_e_id);
+
+        input_update();
         input_handle(body_player);
         physics_update();
+        animation_update(global.time.delta);
 
         render_begin();
 
@@ -200,27 +235,50 @@ int main(int argc, char *argv[])
         render_aabb((float *)static_body_c, WHITE);
         render_aabb((float *)static_body_d, WHITE);
         render_aabb((float *)static_body_e, WHITE);
-        render_aabb((float *)body_player, player_color);
+        render_aabb((float *)static_body_platform_b, GREEN);
+        render_aabb((float *)static_body_platform_c, GREEN);
+        render_aabb((float *)static_body_platform_d, GREEN);
+        render_aabb((float *)static_body_platform_e, GREEN);
 
-        render_aabb((float *)physics_body_get(entity_get(entity_a_id)->body_id), WHITE);
-        render_aabb((float *)physics_body_get(entity_get(entity_b_id)->body_id), WHITE);
+        if (player_color[0] != 0)
+        {
+            render_aabb((float *)body_player, player_color);
+        }
 
-        // for (u32 i = 0; i < 10000; ++i)
-        // {
-        //     vec4 color = {
-        //         (rand() % 255) / 255.0,
-        //         (rand() % 255) / 255.0,
-        //         (rand() % 255) / 255.0,
-        //         (rand() % 255) / 255.0,
-        //     };
-        //     append_quad((vec2){rand() % 640, rand() % 360},
-        //                 (vec2){rand() % 100, rand() % 100},
-        //                 NULL,
-        //                 color);
-        // }
+        render_aabb((float *)physics_body_get(entity_get(entity_a_id)->body_id), RED);
+        render_aabb((float *)physics_body_get(entity_get(entity_b_id)->body_id), RED);
 
-        
-        render_sprite_sheet_frame(&sprite_sheet_player, 0, 0, body_player->aabb.position);
+        for (size_t i = 0; i < entity_count(); ++i)
+        {
+            Entity *entity = entity_get(i);
+
+            if (!entity->is_active)
+            {
+                continue;
+            }
+
+            if (entity->animation_id == (size_t)-1)
+            {
+                continue;
+            }
+
+            Body *body = physics_body_get(entity->body_id);
+            Animation *anim = animation_get(entity->animation_id);
+
+            Animation_Definition *adef = anim->definition;
+            Animation_Frame *aframe = &adef->frames[anim->current_frame_index];
+
+            if (body->velocity[0] < 0)
+            {
+                anim->is_flipped = true;
+            }
+            else if (body->velocity[0] > 0)
+            {
+                anim->is_flipped = false;
+            }
+
+            render_sprite_sheet_frame(adef->sprite_sheet, aframe->row, aframe->column, body->aabb.position, anim->is_flipped);
+        }
 
         render_end(window, sprite_sheet_player.texture_id);
         player_color[0] = 0;
