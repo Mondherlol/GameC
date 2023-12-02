@@ -14,6 +14,7 @@
 #include "engine/entity.h"
 #include "engine/render.h"
 #include "engine/animation.h"
+#include "engine/my_curl.h"
 
 typedef enum collision_layer
 {
@@ -96,6 +97,15 @@ int main(int argc, char *argv[])
     physics_init();
     entity_init();
     animation_init();
+
+    MyCurlHandle curl_handle;
+
+    if (mycurl_init(&curl_handle) != 0)
+    {
+        fprintf(stderr, "Erreur lors de l'initialisation de libcurl\n");
+        return 1;
+    }
+    
 
     SDL_ShowCursor(false); // Cacher le curseur
 
@@ -199,7 +209,11 @@ int main(int argc, char *argv[])
                 // Vérifier si la touche "r" est pressée
                 if (event.key.keysym.sym == SDLK_r)
                 {
-                    printf("Touche R pressee");
+                    printf("Test de la route /ping avec une requête GET...\n");
+                    if (mycurl_get(&curl_handle, "/ping") != 0)
+                    {
+                        fprintf(stderr, "La requête GET vers /ping a échoué.\n");
+                    }
                 }
                 break;
             default:
