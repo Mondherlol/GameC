@@ -195,6 +195,13 @@ int main(int argc, char *argv[])
             case SDL_QUIT:
                 should_quit = true;
                 break;
+            case SDL_KEYDOWN:
+                // Vérifier si la touche "r" est pressée
+                if (event.key.keysym.sym == SDLK_r)
+                {
+                    printf("Touche R pressee");
+                }
+                break;
             default:
                 break;
             }
