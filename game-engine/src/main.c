@@ -25,6 +25,7 @@ typedef enum collision_layer
 
 static bool should_quit = false;
 vec4 player_color = {0, 1, 1, 1};
+
 bool player_is_grounded = false;
 
 static vec2 pos;
@@ -105,33 +106,52 @@ int main(int argc, char *argv[])
         fprintf(stderr, "Erreur lors de l'initialisation de libcurl\n");
         return 1;
     }
-    
 
     SDL_ShowCursor(false); // Cacher le curseur
 
     u8 ennemy_mask = COLLISON_LAYER_ENEMY | COLLISON_LAYER_TERRAIN;
     u8 player_mask = COLLISON_LAYER_ENEMY | COLLISON_LAYER_TERRAIN;
 
-    size_t player_id = entity_create((vec2){100, 200},
-                                     (vec2){24, 24},
-                                     (vec2){0, 0},
+    size_t player_id = entity_create((vec2){100, 200}, // Postion (x,y)
+                                     (vec2){24, 24},   // Size
+                                     (vec2){0, 0},     // Velocité
                                      COLLISON_LAYER_PLAYER,
                                      player_mask,
-                                     player_on_hit,
-                                     player_on_hit_static);
+                                     player_on_hit,       // on hit
+                                     player_on_hit_static // on hit static
+    );
 
     i32 window_width, window_height;
     SDL_GetWindowSize(window, &window_width, &window_height);
+
     float width = window_width / render_get_scale();
     float height = window_height / render_get_scale();
 
     // Murs
-    u32 static_body_a_id = physics_static_body_create((vec2){width * 0.5 - 12.5, height - 12.5}, (vec2){width - 25, 25}, COLLISON_LAYER_TERRAIN);
-    u32 static_body_b_id = physics_static_body_create((vec2){width - 12.5, height * 0.5 + 12.5}, (vec2){25, height - 25}, COLLISON_LAYER_TERRAIN);
-    u32 static_body_c_id = physics_static_body_create((vec2){width * 0.5 + 12.5, 12.5}, (vec2){width - 25, 25}, COLLISON_LAYER_TERRAIN);
-    u32 static_body_d_id = physics_static_body_create((vec2){12.5, height * 0.5 - 12.5}, (vec2){25, height - 25}, COLLISON_LAYER_TERRAIN);
+
+    // Mur du haut
+    u32 static_body_a_id = physics_static_body_create(
+        (vec2){width * 0.5 - 12.5, height - 12.5}, // Position
+        (vec2){width - 25, 25},                    // Size
+        COLLISON_LAYER_TERRAIN);                   // Collision_layer
+    // Mur de droite
+    u32 static_body_b_id = physics_static_body_create(
+        (vec2){width - 12.5, height * 0.5 + 12.5}, // position
+        (vec2){25, height - 25},                   // taille
+        COLLISON_LAYER_TERRAIN);
+    // Mur du bas
+    u32 static_body_c_id = physics_static_body_create(
+        (vec2){width * 0.5 + 12.5, 12.5}, // Postion
+        (vec2){width - 25, 25},           // Taille
+        COLLISON_LAYER_TERRAIN);
+    // Mur de gauche
+    u32 static_body_d_id = physics_static_body_create(
+        (vec2){12.5, height * 0.5 - 12.5}, // Position
+        (vec2){25, height - 25},           // Taille
+        COLLISON_LAYER_TERRAIN);
 
     // Plateformes
+
     u32 static_body_e_id = physics_static_body_create(
         (vec2){width * 0.5, height * 0.65},
         (vec2){62.5, 62.5},
@@ -160,12 +180,29 @@ int main(int argc, char *argv[])
         (vec2){50, 10},                     // Taille
         COLLISON_LAYER_TERRAIN              // Masque de collision
     );
+
     // Ennemies
-    size_t entity_a_id = entity_create((vec2){200, 200}, (vec2){25, 25}, (vec2){400, 0}, COLLISON_LAYER_ENEMY, ennemy_mask, NULL, ennemy_on_hit_static);
-    size_t entity_b_id = entity_create((vec2){300, 300}, (vec2){25, 25}, (vec2){400, 0}, COLLISON_LAYER_ENEMY, ennemy_mask, NULL, ennemy_on_hit_static);
+    size_t entity_a_id = entity_create(
+        (vec2){200, 200}, // Position (x,y)
+        (vec2){25, 25},   // Size
+        (vec2){400, 0},   // Velocité ( x , y )
+        COLLISON_LAYER_ENEMY,
+        ennemy_mask,
+        NULL,                  // On hit another entity
+        ennemy_on_hit_static); // On hit static body
+
+    size_t entity_b_id = entity_create(
+        (vec2){300, 300}, // Position (x,y)
+        (vec2){25, 25},   // Size
+        (vec2){400, 0},   // Velocité (x,y)
+        COLLISON_LAYER_ENEMY,
+        ennemy_mask,
+        NULL,
+        ennemy_on_hit_static);
 
     Sprite_Sheet sprite_sheet_player;
     render_sprite_sheet_init(&sprite_sheet_player, "assets/player.png", 24, 24); // Charger spritesheet joueur
+    // render_sprite_sheet_init(&sprite_sheet_player, "assets/player_2.png", 55, 37); // Charger spritesheet joueur
 
     // Definir animation de deplacement
     size_t adef_player_walk_id = animation_definition_create(
@@ -184,11 +221,13 @@ int main(int argc, char *argv[])
         (u8[]){0},            // colonne
         1                     // Nombre de frames
     );
+
     //                                             Def animation      loop ?
     size_t anim_player_walk_id = animation_create(adef_player_walk_id, true);
     size_t anim_player_idle_id = animation_create(adef_player_idle_id, false);
 
     Entity *player = entity_get(player_id);
+
     player->animation_id = anim_player_idle_id;
 
     while (!should_quit)
@@ -261,10 +300,11 @@ int main(int argc, char *argv[])
         render_aabb((float *)static_body_platform_d, GREEN);
         render_aabb((float *)static_body_platform_e, GREEN);
 
-        if (player_color[0] != 0)
-        {
-            render_aabb((float *)body_player, player_color);
-        }
+        // if (player_color[0] != 0)
+        // {
+        //     render_aabb((float *)body_player, player_color);
+        // }
+        render_aabb((float *)body_player, player_color);
 
         render_aabb((float *)physics_body_get(entity_get(entity_a_id)->body_id), RED);
         render_aabb((float *)physics_body_get(entity_get(entity_b_id)->body_id), RED);
