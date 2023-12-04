@@ -17,6 +17,11 @@
 #include "engine/my_curl.h"
 #include "engine/menu.h"
 
+static const float SPEED_ENEMY_LARGE = 200;
+static const float SPEED_ENEMY_SMALL = 4000;
+static const float HEALTH_ENEMY_LARGE = 7;
+static const float HEALTH_ENEMY_SMALL = 3;
+
 typedef enum collision_layer
 {
     COLLISON_LAYER_PLAYER = 1,
@@ -75,6 +80,53 @@ void player_on_hit_static(Body *self, Static_Body *other, Hit hit)
     }
 }
 
+/**/
+void enemy_small_on_hit_static(Body *self, Static_Body *other, Hit hit)
+{
+    if (hit.normal[0] > 0)
+    {
+        self->velocity[0] = SPEED_ENEMY_SMALL;
+    }
+
+    if (hit.normal[0] < 0)
+    {
+        self->velocity[0] = -SPEED_ENEMY_SMALL;
+    }
+}
+/**/
+void enemy_large_on_hit_static(Body *self, Static_Body *other, Hit hit)
+{
+    if (hit.normal[0] > 0)
+    {
+        self->velocity[0] = SPEED_ENEMY_LARGE;
+    }
+
+    if (hit.normal[0] < 0)
+    {
+        self->velocity[0] = -SPEED_ENEMY_LARGE;
+    }
+}
+
+/*Pour les flammes dans lesquelles tombent les ennemis*/
+void fire_on_hit(Body *self, Body *other, Hit hit)
+{
+    if (other->collision_layer == COLLISON_LAYER_ENEMY)
+    {
+        for (size_t i = 0; i < entity_count(); i++)
+        {
+            Entity *entity = entity_get(i);
+
+            if (entity->body_id == hit.other_id)
+            {
+                Body *body = physics_body_get(entity->body_id);
+                body->is_active = false;
+                entity->is_active = false;
+                break;
+            }
+        }
+    }
+}
+
 void ennemy_on_hit_static(Body *self, Static_Body *other, Hit hit)
 {
     if (hit.normal[0] > 0) // Le fait changer de direction lorsqu'il cogne un mur
@@ -99,8 +151,6 @@ int main(int argc, char *argv[])
     entity_init();
     animation_init();
 
-    render_text_init();
-
     MyCurlHandle curl_handle;
 
     if (mycurl_init(&curl_handle) != 0)
@@ -113,12 +163,14 @@ int main(int argc, char *argv[])
 
     u8 ennemy_mask = COLLISON_LAYER_ENEMY | COLLISON_LAYER_TERRAIN;
     u8 player_mask = COLLISON_LAYER_ENEMY | COLLISON_LAYER_TERRAIN;
+    u8 fire_mask = COLLISON_LAYER_ENEMY | COLLISON_LAYER_PLAYER;
 
     size_t player_id = entity_create((vec2){100, 200}, // Postion (x,y)
                                      (vec2){24, 24},   // Size
                                      (vec2){0, 0},     // Velocité
                                      COLLISON_LAYER_PLAYER,
                                      player_mask,
+                                     false,               // is_kinematic flag
                                      player_on_hit,       // on hit
                                      player_on_hit_static // on hit static
     );
@@ -152,12 +204,11 @@ int main(int argc, char *argv[])
         (vec2){25, height - 25},           // Taille
         COLLISON_LAYER_TERRAIN);
 
-    // Plateformes
-
     u32 static_body_e_id = physics_static_body_create(
         (vec2){width * 0.5, height * 0.65},
         (vec2){62.5, 62.5},
         COLLISON_LAYER_TERRAIN);
+    // Plateformes
 
     u32 platform_b_id = physics_static_body_create(
         (vec2){width * 0.1, height * 0.25}, // Position
@@ -190,6 +241,7 @@ int main(int argc, char *argv[])
         (vec2){400, 0},   // Velocité ( x , y )
         COLLISON_LAYER_ENEMY,
         ennemy_mask,
+        false,
         NULL,                  // On hit another entity
         ennemy_on_hit_static); // On hit static body
 
@@ -199,8 +251,19 @@ int main(int argc, char *argv[])
         (vec2){400, 0},   // Velocité (x,y)
         COLLISON_LAYER_ENEMY,
         ennemy_mask,
+        false,
         NULL,
         ennemy_on_hit_static);
+
+    // size_t entity_fire = entity_create(
+    //     (vec2){370, 50}, // Position (x,y)
+    //     (vec2){25, 25},  // Size
+    //     (vec2){0},       // Velocité (x,y)
+    //     0,
+    //     fire_mask,
+    //     true,
+    //     fire_on_hit,
+    //     NULL);
 
     Sprite_Sheet sprite_sheet_player;
     render_sprite_sheet_init(&sprite_sheet_player, "assets/player.png", 24, 24); // Charger spritesheet joueur
@@ -231,6 +294,8 @@ int main(int argc, char *argv[])
     Entity *player = entity_get(player_id);
 
     player->animation_id = anim_player_idle_id;
+
+    float spawn_timer = 0;
 
     while (!global.should_quit)
     {
@@ -272,6 +337,7 @@ int main(int argc, char *argv[])
             }
 
             Entity *player = entity_get(player_id);
+
             Body *body_player = physics_body_get(player->body_id);
 
             if (body_player->velocity[0] != 0)
@@ -299,7 +365,56 @@ int main(int argc, char *argv[])
             physics_update();
             animation_update(global.time.delta);
 
+            /*Pour garder une trace de l'apparitions*/
+
+            // Spawn enemies
+            // {
+            //     spawn_timer -= global.time.delta;
+            //     if (spawn_timer <= 0)
+            //     {
+            //         spawn_timer = (float)((rand() % 200) + 200) / 100.f;
+            //         spawn_timer *= 0.2;
+
+            //         for (u32 i = 0; i < 50; i++)
+
+            //         {
+
+            //             bool is_flipped = rand() % 100 >= 50;
+
+            //             float spawn_x = is_flipped ? 540 : 100;
+
+            //             size_t entity_id = entity_create(
+            //                 (vec2){spawn_x, 200}, // Position (x,y)
+            //                 (vec2){20, 20},       // Size
+            //                 (vec2){0, 0},         // Velocité (x,y)
+            //                 COLLISON_LAYER_ENEMY,
+            //                 ennemy_mask,
+            //                 false,
+            //                 NULL,
+            //                 enemy_small_on_hit_static);
+            //             Entity *entity = entity_get(entity_id);
+            //             Body *body = physics_body_get(entity->body_id);
+            //             float speed = SPEED_ENEMY_SMALL * ((rand() % 100) * 0.01) + 100;
+            //             body->velocity[0] = is_flipped ? -speed : speed;
+            //         }
+            //     }
+            // }
+
             render_begin();
+            for (size_t i = 0; i < entity_count(); ++i)
+            {
+                Entity *entity = entity_get(i);
+                Body *body = physics_body_get(entity->body_id);
+
+                if (body->is_active)
+                {
+                    render_aabb(body, TURQUOISE);
+                }
+                else
+                {
+                    render_aabb(body, RED);
+                }
+            }
 
             render_aabb((float *)static_body_a, WHITE);
             render_aabb((float *)static_body_b, WHITE);
@@ -311,20 +426,14 @@ int main(int argc, char *argv[])
             render_aabb((float *)static_body_platform_d, GREEN);
             render_aabb((float *)static_body_platform_e, GREEN);
 
-            if (player_color[0] != 0)
-            {
-                render_text("TOUCHER",
-                            physics_body_get(entity_get(player_id)->body_id)->aabb.position[0] * 2,
-                            physics_body_get(entity_get(player_id)->body_id)->aabb.position[1] + 35 * 2,
-                            RED,
-                            1,
-                            0.5);
-                // reset_text_size();
-            }
+            // if (player_color[0] != 0)
+            // {
+            //     render_aabb((float *)body_player, player_color);
+            // }
             render_aabb((float *)body_player, player_color);
 
-            render_aabb((float *)physics_body_get(entity_get(entity_a_id)->body_id), RED);
-            render_aabb((float *)physics_body_get(entity_get(entity_b_id)->body_id), RED);
+            // render_aabb((float *)physics_body_get(entity_get(entity_a_id)->body_id), RED);
+            // render_aabb((float *)physics_body_get(entity_get(entity_b_id)->body_id), RED);
 
             for (size_t i = 0; i < entity_count(); ++i)
             {
@@ -357,12 +466,11 @@ int main(int argc, char *argv[])
 
                 render_sprite_sheet_frame(adef->sprite_sheet, aframe->row, aframe->column, body->aabb.position, anim->is_flipped);
             }
-
-            render_text("Hello World", width / 2, height / 2, WHITE, 1, (float)1);
-            render_end(window, sprite_sheet_player.texture_id);
-            player_color[0] = 0;
-            player_color[2] = 1;
         }
+
+        render_end(window, sprite_sheet_player.texture_id);
+        player_color[0] = 0;
+        player_color[2] = 1;
 
         time_update_late();
     }

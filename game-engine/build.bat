@@ -1,4 +1,4 @@
-set render=src\engine\render\render.c src\engine\render\render_init.c src\engine\render\render_util.c src\engine\render\render_text.c
+set render=src\engine\render\render.c src\engine\render\render_init.c src\engine\render\render_util.c
 set io=src\engine\io\io.c
 set config=src\engine\config\config.c
 set input=src\engine\input\input.c

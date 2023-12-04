@@ -41,6 +41,4 @@ float render_get_scale();
 void render_sprite_sheet_init(Sprite_Sheet *sprite_sheet, const char *path, float cell_width, float cell_height);
 void render_sprite_sheet_frame(Sprite_Sheet *sprite_sheet, float row, float column, vec2 position, bool is_flipped);
 
-void render_text_init();
-void render_text(const char *text, float x, float y, vec4 color, u8 is_centered, float text_size);
 void render_image(float width, float height, const char *path, float x, float y);
