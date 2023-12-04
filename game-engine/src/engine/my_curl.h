@@ -2,15 +2,22 @@
 
 #include <stdio.h>
 #include <curl/curl.h>
+#include <windows.h>
 
 // Définition de la constante pour l'adresse du serveur
 #define SERVER_URL "http://localhost:3001"
 
 // Déclaration d'une structure pour stocker les informations nécessaires à libcurl
-typedef struct
+typedef struct myCurlHandle
 {
     CURL *curl;
 } MyCurlHandle;
+
+typedef struct curlRequestData
+{
+    MyCurlHandle *handle;
+    const char *endpoint;
+} CurlRequestData;
 
 // Fonction pour initialiser libcurl
 int mycurl_init(MyCurlHandle *handle);
@@ -23,3 +30,6 @@ int mycurl_post(MyCurlHandle *handle, const char *endpoint, const char *post_dat
 
 // Fonction pour libérer les ressources
 void mycurl_cleanup(MyCurlHandle *handle);
+
+// Faire une requête GET dans un thread séparé
+DWORD WINAPI async_curl_request(LPVOID data);

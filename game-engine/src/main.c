@@ -15,6 +15,7 @@
 #include "engine/render.h"
 #include "engine/animation.h"
 #include "engine/my_curl.h"
+#include "engine/menu.h"
 
 typedef enum collision_layer
 {
@@ -23,7 +24,6 @@ typedef enum collision_layer
     COLLISON_LAYER_TERRAIN = 1 << 2,
 } Collision_Layer;
 
-static bool should_quit = false;
 vec4 player_color = {0, 1, 1, 1};
 
 bool player_is_grounded = false;
@@ -33,7 +33,7 @@ static vec2 pos;
 static void input_handle(Body *body_player)
 {
     if (global.input.escape || global.input.start_controller)
-        should_quit = true;
+        global.should_quit = true;
 
     float velx = 0;
     float vely = body_player->velocity[1];
@@ -98,6 +98,8 @@ int main(int argc, char *argv[])
     physics_init();
     entity_init();
     animation_init();
+
+    render_text_init();
 
     MyCurlHandle curl_handle;
 
@@ -230,120 +232,137 @@ int main(int argc, char *argv[])
 
     player->animation_id = anim_player_idle_id;
 
-    while (!should_quit)
+    while (!global.should_quit)
     {
-
         time_update();
-
-        SDL_Event event;
-
-        while (SDL_PollEvent(&event))
+        if (!game_started)
         {
-            switch (event.type)
-            {
-            case SDL_QUIT:
-                should_quit = true;
-                break;
-            case SDL_KEYDOWN:
-                // Vérifier si la touche "r" est pressée
-                if (event.key.keysym.sym == SDLK_r)
-                {
-                    printf("Test de la route /ping avec une requête GET...\n");
-                    if (mycurl_get(&curl_handle, "/ping") != 0)
-                    {
-                        fprintf(stderr, "La requête GET vers /ping a échoué.\n");
-                    }
-                }
-                break;
-            default:
-                break;
-            }
-        }
-
-        Entity *player = entity_get(player_id);
-        Body *body_player = physics_body_get(player->body_id);
-
-        if (body_player->velocity[0] != 0)
-        {
-            player->animation_id = anim_player_walk_id;
+            display_menu(window);
         }
         else
         {
-            player->animation_id = anim_player_idle_id;
+
+            SDL_Event event;
+
+            while (SDL_PollEvent(&event))
+            {
+                switch (event.type)
+                {
+                case SDL_QUIT:
+                    global.should_quit = true;
+                    break;
+                case SDL_KEYDOWN:
+                    // Vérifier si la touche "r" est pressée
+                    if (event.key.keysym.sym == SDLK_r)
+                    {
+                        printf("Test de la route /ping avec une requête GET dans un thread dédié.......\n");
+                        // Créer une structure pour stocker les données de la requête
+                        CurlRequestData *curlData = malloc(sizeof(CurlRequestData));
+                        curlData->handle = &curl_handle;
+                        curlData->endpoint = "/ping";
+
+                        // Créer un thread pour effectuer la requête
+                        HANDLE thread = CreateThread(NULL, 0, async_curl_request, curlData, 0, NULL);
+                        CloseHandle(thread); // Fermer le handle du thread pour libérer ses ressources lorsqu'il a terminé
+                    }
+                    break;
+                default:
+                    break;
+                }
+            }
+
+            Entity *player = entity_get(player_id);
+            Body *body_player = physics_body_get(player->body_id);
+
+            if (body_player->velocity[0] != 0)
+            {
+                player->animation_id = anim_player_walk_id;
+            }
+            else
+            {
+                player->animation_id = anim_player_idle_id;
+            }
+
+            Static_Body *static_body_a = physics_static_body_get(static_body_a_id);
+            Static_Body *static_body_b = physics_static_body_get(static_body_b_id);
+            Static_Body *static_body_c = physics_static_body_get(static_body_c_id);
+            Static_Body *static_body_d = physics_static_body_get(static_body_d_id);
+            Static_Body *static_body_e = physics_static_body_get(static_body_e_id);
+
+            Static_Body *static_body_platform_b = physics_static_body_get(platform_b_id);
+            Static_Body *static_body_platform_c = physics_static_body_get(platform_c_id);
+            Static_Body *static_body_platform_d = physics_static_body_get(platform_d_id);
+            Static_Body *static_body_platform_e = physics_static_body_get(platform_e_id);
+
+            input_update();
+            input_handle(body_player);
+            physics_update();
+            animation_update(global.time.delta);
+
+            render_begin();
+
+            render_aabb((float *)static_body_a, WHITE);
+            render_aabb((float *)static_body_b, WHITE);
+            render_aabb((float *)static_body_c, WHITE);
+            render_aabb((float *)static_body_d, WHITE);
+            render_aabb((float *)static_body_e, WHITE);
+            render_aabb((float *)static_body_platform_b, GREEN);
+            render_aabb((float *)static_body_platform_c, GREEN);
+            render_aabb((float *)static_body_platform_d, GREEN);
+            render_aabb((float *)static_body_platform_e, GREEN);
+
+            if (player_color[0] != 0)
+            {
+                render_text("TOUCHER",
+                            physics_body_get(entity_get(player_id)->body_id)->aabb.position[0] * 2,
+                            physics_body_get(entity_get(player_id)->body_id)->aabb.position[1] + 35 * 2,
+                            RED,
+                            1,
+                            0.5);
+                // reset_text_size();
+            }
+            render_aabb((float *)body_player, player_color);
+
+            render_aabb((float *)physics_body_get(entity_get(entity_a_id)->body_id), RED);
+            render_aabb((float *)physics_body_get(entity_get(entity_b_id)->body_id), RED);
+
+            for (size_t i = 0; i < entity_count(); ++i)
+            {
+                Entity *entity = entity_get(i);
+
+                if (!entity->is_active)
+                {
+                    continue;
+                }
+
+                if (entity->animation_id == (size_t)-1)
+                {
+                    continue;
+                }
+
+                Body *body = physics_body_get(entity->body_id);
+                Animation *anim = animation_get(entity->animation_id);
+
+                Animation_Definition *adef = anim->definition;
+                Animation_Frame *aframe = &adef->frames[anim->current_frame_index];
+
+                if (body->velocity[0] < 0)
+                {
+                    anim->is_flipped = true;
+                }
+                else if (body->velocity[0] > 0)
+                {
+                    anim->is_flipped = false;
+                }
+
+                render_sprite_sheet_frame(adef->sprite_sheet, aframe->row, aframe->column, body->aabb.position, anim->is_flipped);
+            }
+
+            render_text("Hello World", width / 2, height / 2, WHITE, 1, (float)1);
+            render_end(window, sprite_sheet_player.texture_id);
+            player_color[0] = 0;
+            player_color[2] = 1;
         }
-
-        Static_Body *static_body_a = physics_static_body_get(static_body_a_id);
-        Static_Body *static_body_b = physics_static_body_get(static_body_b_id);
-        Static_Body *static_body_c = physics_static_body_get(static_body_c_id);
-        Static_Body *static_body_d = physics_static_body_get(static_body_d_id);
-        Static_Body *static_body_e = physics_static_body_get(static_body_e_id);
-
-        Static_Body *static_body_platform_b = physics_static_body_get(platform_b_id);
-        Static_Body *static_body_platform_c = physics_static_body_get(platform_c_id);
-        Static_Body *static_body_platform_d = physics_static_body_get(platform_d_id);
-        Static_Body *static_body_platform_e = physics_static_body_get(platform_e_id);
-
-        input_update();
-        input_handle(body_player);
-        physics_update();
-        animation_update(global.time.delta);
-
-        render_begin();
-
-        render_aabb((float *)static_body_a, WHITE);
-        render_aabb((float *)static_body_b, WHITE);
-        render_aabb((float *)static_body_c, WHITE);
-        render_aabb((float *)static_body_d, WHITE);
-        render_aabb((float *)static_body_e, WHITE);
-        render_aabb((float *)static_body_platform_b, GREEN);
-        render_aabb((float *)static_body_platform_c, GREEN);
-        render_aabb((float *)static_body_platform_d, GREEN);
-        render_aabb((float *)static_body_platform_e, GREEN);
-
-        // if (player_color[0] != 0)
-        // {
-        //     render_aabb((float *)body_player, player_color);
-        // }
-        render_aabb((float *)body_player, player_color);
-
-        render_aabb((float *)physics_body_get(entity_get(entity_a_id)->body_id), RED);
-        render_aabb((float *)physics_body_get(entity_get(entity_b_id)->body_id), RED);
-
-        for (size_t i = 0; i < entity_count(); ++i)
-        {
-            Entity *entity = entity_get(i);
-
-            if (!entity->is_active)
-            {
-                continue;
-            }
-
-            if (entity->animation_id == (size_t)-1)
-            {
-                continue;
-            }
-
-            Body *body = physics_body_get(entity->body_id);
-            Animation *anim = animation_get(entity->animation_id);
-
-            Animation_Definition *adef = anim->definition;
-            Animation_Frame *aframe = &adef->frames[anim->current_frame_index];
-
-            if (body->velocity[0] < 0)
-            {
-                anim->is_flipped = true;
-            }
-            else if (body->velocity[0] > 0)
-            {
-                anim->is_flipped = false;
-            }
-
-            render_sprite_sheet_frame(adef->sprite_sheet, aframe->row, aframe->column, body->aabb.position, anim->is_flipped);
-        }
-
-        render_end(window, sprite_sheet_player.texture_id);
-        player_color[0] = 0;
-        player_color[2] = 1;
 
         time_update_late();
     }
