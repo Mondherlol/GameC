@@ -55,13 +55,5 @@
   "C_Cpp_Runner.useLeakSanitizer": false,
   "C_Cpp_Runner.showCompilationTime": false,
   "C_Cpp_Runner.useLinkTimeOptimization": false,
-  "C_Cpp_Runner.msvcSecureNoWarnings": false,
-  "files.associations": {
-    "*.ejs": "html",
-<<<<<<< HEAD
-    "sdl_ttf.h": "c"
-=======
-    "render.h": "c"
->>>>>>> 96c89dfb3472dd6d4510bca6123f84099c33f03f
-  }
+  "C_Cpp_Runner.msvcSecureNoWarnings": false
 }
