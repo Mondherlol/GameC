@@ -13,5 +13,3 @@ set files=src\glad.c src\main.c src\engine\global.c %render% %io% %config% %inpu
 set libs=../lib/SDL2main.lib ../lib/SDL2.lib ../lib/libcurl.a ../lib/libcurl.dll.a ../lib/freetype.lib
 
 CL /Zi /I ../include %files% /link %libs% /OUT:mygame.exe
-
-

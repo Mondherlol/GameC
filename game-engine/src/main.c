@@ -150,7 +150,9 @@ int main(int argc, char *argv[])
     physics_init();
     entity_init();
     animation_init();
+
     render_text_init();
+
     MyCurlHandle curl_handle;
 
     if (mycurl_init(&curl_handle) != 0)
@@ -466,11 +468,10 @@ int main(int argc, char *argv[])
 
                 render_sprite_sheet_frame(adef->sprite_sheet, aframe->row, aframe->column, body->aabb.position, anim->is_flipped);
             }
+            render_end(window, sprite_sheet_player.texture_id);
+            player_color[0] = 0;
+            player_color[2] = 1;
         }
-        
-        render_end(window, sprite_sheet_player.texture_id);
-        player_color[0] = 0;
-        player_color[2] = 1;
 
         time_update_late();
     }
