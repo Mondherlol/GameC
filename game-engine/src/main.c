@@ -152,7 +152,7 @@ int main(int argc, char *argv[])
     physics_init();
     entity_init();
     animation_init();
-
+    render_text_init();
     MyCurlHandle curl_handle;
 
     if (mycurl_init(&curl_handle) != 0)
@@ -478,6 +478,8 @@ int main(int argc, char *argv[])
         // render_aabb((float *)physics_body_get(entity_get(entity_b_id)->body_id), RED);
 
 
+           
+
         for (size_t i = 0; i < entity_count(); ++i)
         {
             Entity *entity = entity_get(i);
@@ -509,7 +511,7 @@ int main(int argc, char *argv[])
 
             render_sprite_sheet_frame(adef->sprite_sheet, aframe->row, aframe->column, body->aabb.position, anim->is_flipped);
         }
-
+        render_text("Hello World", width / 2, height / 2, WHITE, 1); 
         render_end(window, sprite_sheet_player.texture_id);
         player_color[0] = 0;
         player_color[2] = 1;

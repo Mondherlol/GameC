@@ -25,6 +25,7 @@ static u32 vao_batch;
 static u32 vbo_batch;
 static u32 ebo_batch;
 static u32 shader_batch;
+
 static Array_List *list_batch;
 
 SDL_Window *render_init(void)

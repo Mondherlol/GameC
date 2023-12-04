@@ -25,6 +25,8 @@ typedef struct sprite_sheet
 #define MAX_BATCH_VERTICES 40000
 #define MAX_BATCH_ELEMENTS 60000
 
+static u32 shader_text ;
+
 // Procédures habituelles de rendus
 SDL_Window *render_init(void);
 void render_begin(void);
@@ -38,3 +40,6 @@ float render_get_scale();
 // void append_quad(vec2 position, vec2 size, vec4 texture_coordinates, vec4 color);
 void render_sprite_sheet_init(Sprite_Sheet *sprite_sheet, const char *path, float cell_width, float cell_height);
 void render_sprite_sheet_frame(Sprite_Sheet *sprite_sheet, float row, float column, vec2 position, bool is_flipped);
+
+void render_text_init();
+void render_text(const char *text, float x, float y, vec4 color, u8 is_centered);
