@@ -1,5 +1,8 @@
 
 #include "../my_curl.h"
+#include <stdlib.h> // Pour malloc et free
+
+#include <windows.h>
 
 int mycurl_init(MyCurlHandle *handle)
 {
@@ -14,8 +17,6 @@ int mycurl_init(MyCurlHandle *handle)
 
     return 0; // Succès
 }
-
-#include <stdlib.h> // Pour malloc et free
 
 // Fonction de rappel pour gérer les données de la réponse
 static size_t mycurl_write_callback(void *contents, size_t size, size_t nmemb, void *userp)
@@ -85,4 +86,19 @@ void mycurl_cleanup(MyCurlHandle *handle)
     {
         curl_easy_cleanup(handle->curl);
     }
+}
+
+DWORD WINAPI async_curl_request(LPVOID data)
+{
+    CurlRequestData *curlData = (CurlRequestData *)data;
+
+    // Effectuer la requête dans un thread séparé
+    if (mycurl_get(curlData->handle, curlData->endpoint) != 0)
+    {
+        fprintf(stderr, "La requête GET vers %s a échoué.\n", curlData->endpoint);
+    }
+
+    free(curlData); // Libérer la mémoire allouée pour la structure
+
+    return 0;
 }

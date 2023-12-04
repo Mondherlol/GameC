@@ -31,6 +31,8 @@ static Array_List *list_batch;
 SDL_Window *render_init(void)
 {
     SDL_Window *window = render_init_window(window_width, window_height);
+    global.window_height = window_height;
+    global.window_width = window_width;
 
     render_init_quad(&vao_quad, &vbo_quad, &ebo_quad); // Initier le rendu du quad
     render_init_batch_quads(&vao_batch, &vbo_batch, &ebo_batch);
@@ -226,6 +228,7 @@ void render_sprite_sheet_init(Sprite_Sheet *sprite_sheet, const char *path, floa
     sprite_sheet->cell_width = cell_width;
     sprite_sheet->cell_height = cell_height;
 }
+
 static void calculate_sprite_texture_coordinates(vec4 result, float row, float column, float texture_width, float texture_height, float cell_width, float cell_height)
 {
     float w = 1.0 / (texture_width / cell_width);
@@ -257,4 +260,68 @@ void render_sprite_sheet_frame(Sprite_Sheet *sprite_sheet, float row, float colu
 float render_get_scale()
 {
     return scale;
+}
+void render_image(float width, float height, const char *path, float x, float y)
+{
+    // Chargement de l'image
+    int image_width, image_height, channel_count;
+    stbi_set_flip_vertically_on_load(1); // Inverser verticalement les coordonnées de texture
+    u8 *image_data = stbi_load(path, &image_width, &image_height, &channel_count, STBI_rgb_alpha);
+    if (!image_data)
+    {
+        ERROR_EXIT("Erreur lors du chargement de l'image :  %s\n", path);
+    }
+
+    // Initialisation de la texture
+    GLuint texture_id;
+    glGenTextures(1, &texture_id);
+    glActiveTexture(GL_TEXTURE0);
+    glBindTexture(GL_TEXTURE_2D, texture_id);
+
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+
+    GLenum format = (channel_count == 4) ? GL_RGBA : GL_RGB;
+
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, image_width, image_height, 0, format, GL_UNSIGNED_BYTE, image_data);
+    stbi_image_free(image_data);
+
+    // Dessin de l'image
+    float vertices[] = {
+        // Positions        // Coordonnées de texture
+        x, y + height, 0.0f, 1.0f, // bottom-left
+        x, y, 0.0f, 0.0f,          // top-left
+        x + width, y, 1.0f, 0.0f,  // top-right
+
+        x, y + height, 0.0f, 1.0f,          // bottom-left
+        x + width, y, 1.0f, 0.0f,           // top-right
+        x + width, y + height, 1.0f, 1.0f}; // bottom-right
+
+    // Création et configuration du VAO (Vertex Array Object) et du VBO (Vertex Buffer Object)
+    GLuint vao, vbo;
+    glGenVertexArrays(1, &vao);
+    glGenBuffers(1, &vbo);
+
+    glBindVertexArray(vao);
+
+    glBindBuffer(GL_ARRAY_BUFFER, vbo);
+    glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
+
+    // Position attribute
+    glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 4 * sizeof(float), (void *)0);
+    glEnableVertexAttribArray(0);
+
+    // Texture attribute
+    glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 4 * sizeof(float), (void *)(2 * sizeof(float)));
+    glEnableVertexAttribArray(1);
+
+    // Rendu de l'image
+    glDrawArrays(GL_TRIANGLES, 0, 6);
+
+    // Libération des ressources
+    glDeleteVertexArrays(1, &vao);
+    glDeleteBuffers(1, &vbo);
+    glDeleteTextures(1, &texture_id);
 }
