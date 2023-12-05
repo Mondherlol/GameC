@@ -16,6 +16,12 @@
 #include "engine/animation.h"
 #include "engine/my_curl.h"
 #include "engine/menu.h"
+#include "engine/audio.h"
+
+
+static Mix_Music *MUSIC_STAGE_1; 
+static Mix_Chunk *SOUND_JUMP;
+
 
 static const float SPEED_ENEMY_LARGE = 200;
 static const float SPEED_ENEMY_SMALL = 4000;
@@ -57,6 +63,7 @@ static void input_handle(Body *body_player)
     {
         player_is_grounded = false;
         vely = 1200;
+        audio_sound_play(SOUND_JUMP);
     }
 
     body_player->velocity[0] = velx;
@@ -152,6 +159,12 @@ int main(int argc, char *argv[])
     animation_init();
 
     render_text_init();
+    audio_init();
+
+    //POUR LA MUSIQUE
+    audio_sound_load(&SOUND_JUMP, "assets/jump.wav");
+	audio_music_load(&MUSIC_STAGE_1, "assets/breezys_mega_quest_2_stage_1.mp3");
+	audio_music_play(MUSIC_STAGE_1);
 
     MyCurlHandle curl_handle;
 
