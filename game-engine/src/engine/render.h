@@ -21,6 +21,13 @@ typedef struct sprite_sheet
     u32 texture_id;
 } Sprite_Sheet;
 
+typedef struct image
+{
+    u32 texture_id;
+    float width;
+    float height;
+} Image;
+
 #define MAX_BATCH_QUADS 10000
 #define MAX_BATCH_VERTICES 40000
 #define MAX_BATCH_ELEMENTS 60000
@@ -49,5 +56,6 @@ void render_sprite_sheet_frame(Sprite_Sheet *sprite_sheet, float row, float colu
 void render_text_init();
 void render_text(const char *text, float x, float y, vec4 color, u8 is_centered);
 
-// Rendus d'images
-void render_image(float width, float height, const char *path, float x, float y);
+// Rendu d'images
+void init_image(Image *image, const char *path);
+void render_image(Image *image, vec2 position, vec2 size);

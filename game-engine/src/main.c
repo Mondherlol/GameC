@@ -15,7 +15,7 @@
 #include "engine/render.h"
 #include "engine/animation.h"
 #include "engine/my_curl.h"
-#include "engine/menu.h"
+#include "engine/scenes.h"
 
 static const float SPEED_ENEMY_LARGE = 200;
 static const float SPEED_ENEMY_SMALL = 4000;
@@ -151,7 +151,7 @@ int main(int argc, char *argv[])
     animation_init();
     render_text_init();
 
-    global.current_screen = MENU_SCREEN;
+    scenes_init();
 
     MyCurlHandle curl_handle;
 
@@ -300,6 +300,7 @@ int main(int argc, char *argv[])
         time_update();
         if (global.current_screen == MENU_SCREEN)
         {
+
             display_menu(window);
         }
         else
