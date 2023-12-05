@@ -18,10 +18,8 @@
 #include "engine/scenes.h"
 #include "engine/audio.h"
 
-
-static Mix_Music *MUSIC_STAGE_1; 
+static Mix_Music *MUSIC_STAGE_1;
 static Mix_Chunk *SOUND_JUMP;
-
 
 static const float SPEED_ENEMY_LARGE = 200;
 static const float SPEED_ENEMY_SMALL = 4000;
@@ -163,10 +161,11 @@ int main(int argc, char *argv[])
     
     
     
-    //POUR LA MUSIQUE
+
+    // POUR LA MUSIQUE
     audio_sound_load(&SOUND_JUMP, "assets/jump.wav");
-	audio_music_load(&MUSIC_STAGE_1, "assets/breezys_mega_quest_2_stage_1.mp3");
-	audio_music_play(MUSIC_STAGE_1);
+    audio_music_load(&MUSIC_STAGE_1, "assets/breezys_mega_quest_2_stage_1.mp3");
+    audio_music_play(MUSIC_STAGE_1);
 
     
 
@@ -312,12 +311,13 @@ int main(int argc, char *argv[])
   
     float spawn_timer = 0;
 
+    u8 texture_slots[8] = {0};
+
     while (!global.should_quit)
     {
         time_update();
         if (global.current_screen == MENU_SCREEN)
         {
-
             display_menu(window);
         }
         else
@@ -480,9 +480,9 @@ int main(int argc, char *argv[])
                     anim->is_flipped = false;
                 }
 
-                render_sprite_sheet_frame(adef->sprite_sheet, aframe->row, aframe->column, body->aabb.position, anim->is_flipped);
+                render_sprite_sheet_frame(adef->sprite_sheet, aframe->row, aframe->column, body->aabb.position, anim->is_flipped, texture_slots);
             }
-            render_end(window, sprite_sheet_player.texture_id);
+            render_end(window, texture_slots);
             player_color[0] = 0;
             player_color[2] = 1;
         }

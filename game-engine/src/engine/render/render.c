@@ -52,13 +52,19 @@ void render_begin(void)
     list_batch->len = 0;
 }
 
-static void render_batch(Batch_Vertex *vertices, size_t count, u32 texture_id)
+static void render_batch(Batch_Vertex *vertices, size_t count, u32 texture_id[8])
 {
     glBindBuffer(GL_ARRAY_BUFFER, vbo_batch);
     glBufferSubData(GL_ARRAY_BUFFER, 0, count * sizeof(Batch_Vertex), vertices);
 
     glActiveTexture(GL_TEXTURE0);
-    glBindTexture(GL_TEXTURE_2D, texture_id);
+    glBindTexture(GL_TEXTURE_2D, texture_color);
+
+    for (u32 i = 1; i < 8; ++i)
+    {
+        glActiveTexture(GL_TEXTURE0 + i);
+        glBindTexture(GL_TEXTURE_2D, texture_id[i]);
+    }
 
     glUseProgram(shader_batch);
     glBindVertexArray(vao_batch);
@@ -66,7 +72,7 @@ static void render_batch(Batch_Vertex *vertices, size_t count, u32 texture_id)
     glDrawElements(GL_TRIANGLES, (count >> 2) * 6, GL_UNSIGNED_INT, NULL);
 }
 
-static void append_quad(vec2 position, vec2 size, vec4 texture_coordinates, vec4 color)
+static void append_quad(vec2 position, vec2 size, vec4 texture_coordinates, vec4 color, float texture_slot)
 {
     vec4 uvs = {0, 0, 1, 1};
 
@@ -79,30 +85,34 @@ static void append_quad(vec2 position, vec2 size, vec4 texture_coordinates, vec4
                                       .position = {position[0], position[1]},
                                       .uvs = {uvs[0], uvs[1]},
                                       .color = {color[0], color[1], color[2], color[3]},
-                                  });
+                                      .texture_slot = texture_slot});
 
     array_list_append(list_batch, &(Batch_Vertex){
                                       .position = {position[0] + size[0], position[1]},
                                       .uvs = {uvs[2], uvs[1]},
                                       .color = {color[0], color[1], color[2], color[3]},
+                                      .texture_slot = texture_slot
+
                                   });
 
     array_list_append(list_batch, &(Batch_Vertex){
                                       .position = {position[0] + size[0], position[1] + size[1]},
                                       .uvs = {uvs[2], uvs[3]},
                                       .color = {color[0], color[1], color[2], color[3]},
-                                  });
+                                      .texture_slot = texture_slot});
 
     array_list_append(list_batch, &(Batch_Vertex){
                                       .position = {position[0], position[1] + size[1]},
                                       .uvs = {uvs[0], uvs[3]},
                                       .color = {color[0], color[1], color[2], color[3]},
+                                      .texture_slot = texture_slot
+
                                   });
 }
 
-void render_end(SDL_Window *window, u32 batch_texture_id)
+void render_end(SDL_Window *window, u32 batch_texture_ids[8])
 {
-    render_batch(list_batch->items, list_batch->len, batch_texture_id);
+    render_batch(list_batch->items, list_batch->len, batch_texture_ids);
 
     SDL_GL_SwapWindow(window); // Mettre à jour la fenêtre avec le rendu OPENGL
 }
@@ -236,7 +246,38 @@ static void calculate_sprite_texture_coordinates(vec4 result, float row, float c
     result[2] = x + w;
     result[3] = y + h;
 }
-void render_sprite_sheet_frame(Sprite_Sheet *sprite_sheet, float row, float column, vec2 position, bool is_flipped)
+
+static i32 find_texture_slot(u32 texture_slots[8], u32 texture_id)
+{
+    for (i32 i = 1; i < 8; ++i)
+    {
+        if (texture_slots[i] == texture_id)
+        {
+            return i;
+        }
+    }
+    return -1;
+}
+
+static i32 try_insert_texture(u32 texture_slots[8], u32 texture_id)
+{
+    i32 index = find_texture_slot(texture_slots, texture_id);
+
+    if (index > 0)
+        return index;
+
+    for (i32 i = 1; i < 8; ++i)
+    {
+        if (texture_slots[i] == 0)
+        {
+            texture_slots[i] = texture_id;
+            return i;
+        }
+    }
+    return -1;
+}
+
+void render_sprite_sheet_frame(Sprite_Sheet *sprite_sheet, float row, float column, vec2 position, bool is_flipped, u32 texture_slots[8])
 {
     vec4 uvs;
     calculate_sprite_texture_coordinates(uvs, row, column, sprite_sheet->width, sprite_sheet->height, sprite_sheet->cell_width, sprite_sheet->cell_height);
@@ -250,7 +291,14 @@ void render_sprite_sheet_frame(Sprite_Sheet *sprite_sheet, float row, float colu
 
     vec2 size = {sprite_sheet->cell_width, sprite_sheet->cell_height};
     vec2 bottom_left = {position[0] - size[0] * 0.5, position[1] - size[1] * 0.5};
-    append_quad(bottom_left, size, uvs, (vec4){1, 1, 1, 1});
+
+    i32 texture_slot = try_insert_texture(texture_slots, sprite_sheet->texture_id);
+    if (texture_slot == -1)
+    {
+        // Faire autre chose
+    }
+
+    append_quad(bottom_left, size, uvs, (vec4){1, 1, 1, 1}, (float)texture_slot);
 }
 
 float render_get_scale()
@@ -290,9 +338,20 @@ void init_image(Image *image, const char *path)
 }
 
 // Ajout d'une image à la liste de lots
-void render_image(Image *image, vec2 position, vec2 size)
+void render_image(Image *image, vec2 position, vec2 size, u32 texture_slots[8])
 {
     vec4 texture_coordinates = {0.0f, 0.0f, 1.0f, 1.0f};
-    append_quad(position, size, texture_coordinates, (vec4){1, 1, 1, 1});
-    render_batch(list_batch->items, list_batch->len, image->texture_id);
+
+    i32 texture_slot = try_insert_texture(texture_slots, image->texture_id);
+    if (texture_slot == -1)
+    {
+        // Faire autre chose
+    }
+
+    append_quad(position, size, texture_coordinates, (vec4){1, 1, 1, 1}, (float)texture_slot);
+
+    // append_quad(bottom_left, size, uvs, (vec4){1, 1, 1, 1}, (float)texture_slot);
+
+    // append_quad(position, size, texture_coordinates, (vec4){1, 1, 1, 1});
+    // render_batch(list_batch->items, list_batch->len, image->texture_id);
 }

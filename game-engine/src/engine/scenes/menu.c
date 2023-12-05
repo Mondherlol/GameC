@@ -13,6 +13,8 @@ Image menuImages[MENU_ITEMS_COUNT];
 // Variable pour suivre la sélection actuelle dans le menu
 int currentSelection = 0;
 
+u8 texture_slots[8] = {0};
+
 void menu_init()
 {
     init_image(&menuImages[0], "assets/1menu_selected_play.png");
@@ -36,13 +38,11 @@ void display_menu(SDL_Window *window)
  // Afficher seulement l'image actuelle
     render_image(&menuImages[currentSelection],
                  (vec2){0, 0},                                                                       // position
-                 (vec2){menuImages[currentSelection].width / render_get_scale(), menuImages[currentSelection].height / render_get_scale()} // taille 
-    );
-
-    
-    
-    
-
+                 (vec2){menuImages[currentSelection].width / render_get_scale(),menuImages[currentSelection].height / render_get_scale() } , // taille 
+                 texture_slots
+                 );
+   
+     
     //render_text("NON CONNECTE ", width / 2, height * 0.8, RED, 1);
 
     // render_text("Game Menu", width / 2, height * 0.8, WHITE, 1);
@@ -97,5 +97,7 @@ void display_menu(SDL_Window *window)
         }
     }
 
-    SDL_GL_SwapWindow(window); // Mettre à jour la fenêtre avec le rendu OPENGL
+    render_end(window, texture_slots);
+
+    // SDL_GL_SwapWindow(window); // Mettre à jour la fenêtre avec le rendu OPENGL
 }
