@@ -25,8 +25,6 @@ typedef struct sprite_sheet
 #define MAX_BATCH_VERTICES 40000
 #define MAX_BATCH_ELEMENTS 60000
 
-static u32 shader_text; // ID du shader par défaut
-
 // Procédures habituelles de rendus
 SDL_Window *render_init(void);
 void render_begin(void);

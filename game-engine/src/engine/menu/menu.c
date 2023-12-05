@@ -7,7 +7,6 @@
 
 void display_menu(SDL_Window *window)
 {
-
     render_begin();
     float width = global.window_width / render_get_scale();
     float height = global.window_height / render_get_scale();

@@ -131,7 +131,6 @@ static u32 shader_setup(const char *vert_path, const char *frag_path)
 
 void render_text_init()
 {
-    shader_text = render_shader_create("./shaders/text.vert", "./shaders/text.frag");
 
     // Setup text shader.
     state->text_shader = shader_setup("./shaders/text.vert", "./shaders/text.frag");
