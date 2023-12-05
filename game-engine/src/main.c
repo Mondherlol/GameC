@@ -149,7 +149,6 @@ void ennemy_on_hit_static(Body *self, Static_Body *other, Hit hit)
 
 int main(int argc, char *argv[])
 {
-
     time_init(60);
     config_init();
     SDL_Window *window = render_init();
@@ -157,7 +156,6 @@ int main(int argc, char *argv[])
     physics_init();
     entity_init();
     animation_init();
-
     render_text_init();
     audio_init();
 
@@ -166,13 +164,11 @@ int main(int argc, char *argv[])
 	audio_music_load(&MUSIC_STAGE_1, "assets/breezys_mega_quest_2_stage_1.mp3");
 	audio_music_play(MUSIC_STAGE_1);
 
+    global.current_screen = MENU_SCREEN;
+
     MyCurlHandle curl_handle;
 
-    if (mycurl_init(&curl_handle) != 0)
-    {
-        fprintf(stderr, "Erreur lors de l'initialisation de libcurl\n");
-        return 1;
-    }
+    mycurl_init(&curl_handle);
 
     SDL_ShowCursor(false); // Cacher le curseur
 
@@ -315,7 +311,7 @@ int main(int argc, char *argv[])
     while (!global.should_quit)
     {
         time_update();
-        if (!game_started)
+        if (global.current_screen == MENU_SCREEN)
         {
             display_menu(window);
         }

@@ -7,7 +7,6 @@
 
 void display_menu(SDL_Window *window)
 {
-
     render_begin();
     float width = global.window_width / render_get_scale();
     float height = global.window_height / render_get_scale();
@@ -16,12 +15,14 @@ void display_menu(SDL_Window *window)
     // render_sprite_sheet_init(&sprite_sheet_menu, "assets/player_2.png", 1280, 720); // Charger spritesheet joueur
     // render_sprite_sheet_frame(&sprite_sheet_menu, 0, 0, (vec2){width / 2, height / 2}, false);
 
-    // render_image(width, height, "./assets/player.png", 0, 0);
+    render_image(width, height, "./assets/player.png", 0, 0);
 
-    render_text("Game Menu", width / 2, height * 0.8, WHITE, 1);
-    render_text("1. Start Game", width / 2, height * 0.5, WHITE, 1);
-    render_text("2. Options", width / 2, height * 0.4, WHITE, 1);
-    render_text("3. Quit", width / 2, height * 0.3, WHITE, 1);
+    // render_text("Game Menu", width / 2, height * 0.8, WHITE, 1);
+    // render_text("1. Start Game", width / 2, height * 0.5, WHITE, 1);
+    // render_text("2. Options", width / 2, height * 0.4, WHITE, 1);
+    // render_text("3. Quit", width / 2, height * 0.3, WHITE, 1);
+
+    render_text("Hello world", width / 2, height * 0.8, WHITE, 1);
 
     SDL_Event menuEvent;
     while (SDL_PollEvent(&menuEvent))
@@ -35,13 +36,16 @@ void display_menu(SDL_Window *window)
             switch (menuEvent.key.keysym.sym)
             {
             case SDLK_1:
-                // Code pour démarrer le jeu
-                game_started = true;
+                // Demarer le jeu
+                global.current_screen = GAME_SCREEN;
                 break;
             case SDLK_2:
-                // Code pour afficher les options (à implémenter)
+                // Ouvrir les parametres
+                global.current_screen = SETTINGS_SCREEN;
+
                 break;
             case SDLK_3:
+                // Quitter le jeu
                 global.should_quit = true; // Quitter le jeu si "Quit" est sélectionné
                 break;
             default:

@@ -20,7 +20,7 @@ typedef struct curlRequestData
 } CurlRequestData;
 
 // Fonction pour initialiser libcurl
-int mycurl_init(MyCurlHandle *handle);
+void mycurl_init(MyCurlHandle *handle);
 
 // Fonction pour effectuer une requête GET
 int mycurl_get(MyCurlHandle *handle, const char *endpoint);
