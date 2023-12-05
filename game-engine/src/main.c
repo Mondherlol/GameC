@@ -309,7 +309,7 @@ int main(int argc, char *argv[])
     Entity *player = entity_get(player_id);
 
     player->animation_id = anim_player_idle_id;
-
+  
     float spawn_timer = 0;
 
     while (!global.should_quit)

@@ -5,29 +5,45 @@
 #include "../util.h"
 #include "../global.h"
 
-Image menuImage;
+
+#define MENU_ITEMS_COUNT 3
+
+//tab pour stocker les images 
+Image menuImages[MENU_ITEMS_COUNT];
+// Variable pour suivre la sélection actuelle dans le menu
+int currentSelection = 0;
 
 void menu_init()
 {
-    init_image(&menuImage, "assets/menu.png");
+    init_image(&menuImages[0], "assets/1menu_selected_play.png");
+    init_image(&menuImages[1], "assets/2menu_selected_scores.png");
+    init_image(&menuImages[2], "assets/3menu_selected_quit.png");
 }
 
 void display_menu(SDL_Window *window)
 {
-
+  
+    //initiation du rendu
     render_begin();
 
+    //mise a jour de l'entree de lutilisateur
     input_update();
 
+    // Obtenir les dimensions de la fenetre
     float width = global.window_width / render_get_scale();
     float height = global.window_height / render_get_scale();
 
-    render_image(&menuImage,
+ // Afficher seulement l'image actuelle
+    render_image(&menuImages[currentSelection],
                  (vec2){0, 0},                                                                       // position
-                 (vec2){menuImage.width / render_get_scale(), menuImage.height / render_get_scale()} // Size
+                 (vec2){menuImages[currentSelection].width / render_get_scale(), menuImages[currentSelection].height / render_get_scale()} // taille 
     );
 
-    render_text("NON CONNECTE ", width / 2, height * 0.8, RED, 1);
+    
+    
+    
+
+    //render_text("NON CONNECTE ", width / 2, height * 0.8, RED, 1);
 
     // render_text("Game Menu", width / 2, height * 0.8, WHITE, 1);
     // render_text("1. Start Game", width / 2, height * 0.5, WHITE, 1);
@@ -38,29 +54,39 @@ void display_menu(SDL_Window *window)
         global.should_quit = true;
 
     SDL_Event menuEvent;
-    while (SDL_PollEvent(&menuEvent))
-    {
+ 
 
+ while (SDL_PollEvent(&menuEvent))
+    {
         switch (menuEvent.type)
         {
         case SDL_QUIT:
-            global.should_quit = true; // Quitter le jeu si la fenêtre est fermée
+            global.should_quit = true;
             break;
         case SDL_KEYDOWN:
             switch (menuEvent.key.keysym.sym)
             {
-            case SDLK_1:
-                // Demarer le jeu
-                global.current_screen = GAME_SCREEN;
+            case SDLK_UP:
+                // Changer la sélection vers l'image précédente
+                currentSelection = (currentSelection - 1 + MENU_ITEMS_COUNT) % MENU_ITEMS_COUNT;
                 break;
-            case SDLK_2:
-                // Ouvrir les parametres
-                global.current_screen = SETTINGS_SCREEN;
-
+            case SDLK_DOWN:
+                currentSelection = (currentSelection + 1) % MENU_ITEMS_COUNT;
                 break;
-            case SDLK_3:
-                // Quitter le jeu
-                global.should_quit = true; // Quitter le jeu si "Quit" est sélectionné
+            case SDLK_RETURN:
+                // Gérer la sélection en fonction de currentSelection
+                switch (currentSelection)
+                {
+                case 0:
+                    global.current_screen = GAME_SCREEN;
+                    break;
+                case 1:
+                    global.current_screen = SETTINGS_SCREEN;
+                    break;
+                case 2:
+                    global.should_quit = true;
+                    break;
+                }
                 break;
             default:
                 break;
