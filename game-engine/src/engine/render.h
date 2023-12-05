@@ -25,21 +25,29 @@ typedef struct sprite_sheet
 #define MAX_BATCH_VERTICES 40000
 #define MAX_BATCH_ELEMENTS 60000
 
+static float window_width = 1280;
+static float window_height = 720;
+static float render_width = 640;
+static float render_height = 360;
+static float scale = 2;
+
 // Procédures habituelles de rendus
 SDL_Window *render_init(void);
-void render_begin(void);
-void render_end(SDL_Window *window, u32 batch_texture_id);
+void render_begin(void);                                   // Mettre couleur de fond et vider la liste batch
+void render_end(SDL_Window *window, u32 batch_texture_id); // Effectuer le rendu batch + Mettre à jour la fenêtre avec le rendu OPENGL
 void render_quad(vec2 pos, vec2 size, vec4 color);
 void render_line_segment(vec2 start, vec2 end, vec4 color); // Dessiner une ligne
 void render_quad_line(vec2 pos, vec2 size, vec4 color);     // Dessiner les lignes d'un quad
 void render_aabb(float *aabb, vec4 color);
 float render_get_scale();
 
-// void append_quad(vec2 position, vec2 size, vec4 texture_coordinates, vec4 color);
+// Rendus de sprite
 void render_sprite_sheet_init(Sprite_Sheet *sprite_sheet, const char *path, float cell_width, float cell_height);
 void render_sprite_sheet_frame(Sprite_Sheet *sprite_sheet, float row, float column, vec2 position, bool is_flipped);
 
-void render_image(float width, float height, const char *path, float x, float y);
-
+// Rendu de texte
 void render_text_init();
 void render_text(const char *text, float x, float y, vec4 color, u8 is_centered);
+
+// Rendus d'images
+void render_image(float width, float height, const char *path, float x, float y);

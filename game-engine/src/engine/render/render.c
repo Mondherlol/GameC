@@ -8,12 +8,6 @@
 #include "../array_list.h"
 #include "../util.h"
 
-static float window_width = 1280;
-static float window_height = 720;
-static float render_width = 640;
-static float render_height = 360;
-static float scale = 2;
-
 static u32 vao_quad;       // Vertex Array Object pour dessiner un quad  - > OU Tableau d'array
 static u32 vbo_quad;       // Vectex Buffer Object pour dessiner un quad
 static u32 ebo_quad;       // Element Buffer Object pour dessiner un quad
@@ -49,6 +43,7 @@ SDL_Window *render_init(void)
 
     return window;
 }
+
 void render_begin(void)
 {
     glClearColor(0.08, 0.1, 0.1, 1); // Couleur d'effacement de l'écran en début de rendu

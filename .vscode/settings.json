@@ -58,6 +58,10 @@
   "C_Cpp_Runner.msvcSecureNoWarnings": false,
   "files.associations": {
     "*.ejs": "html",
-    "time.h": "c"
+    "time.h": "c",
+    "types.h": "c",
+    "sdl.h": "c",
+    "menu.h": "c",
+    "my_curl.h": "c"
   }
 }
