@@ -158,13 +158,17 @@ int main(int argc, char *argv[])
     animation_init();
     render_text_init();
     audio_init();
-
+    scenes_init();
+    
+    
+    
+    
     //POUR LA MUSIQUE
     audio_sound_load(&SOUND_JUMP, "assets/jump.wav");
 	audio_music_load(&MUSIC_STAGE_1, "assets/breezys_mega_quest_2_stage_1.mp3");
 	audio_music_play(MUSIC_STAGE_1);
 
-    scenes_init();
+    
 
     MyCurlHandle curl_handle;
 
@@ -379,7 +383,7 @@ int main(int argc, char *argv[])
 
             /*Pour garder une trace de l'apparitions*/
 
-            // Spawn enemies
+            // Spawn enemies =>Faire apparaître des ennemis
             // {
             //     spawn_timer -= global.time.delta;
             //     if (spawn_timer <= 0)
