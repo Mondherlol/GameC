@@ -106,6 +106,7 @@ void render_end(SDL_Window *window, u32 batch_texture_id)
 
     SDL_GL_SwapWindow(window); // Mettre à jour la fenêtre avec le rendu OPENGL
 }
+
 void render_quad(vec2 pos, vec2 size, vec4 color)
 {
     glUseProgram(shader_default);
@@ -256,11 +257,13 @@ float render_get_scale()
 {
     return scale;
 }
-void render_image(float width, float height, const char *path, float x, float y)
+
+// Initialisation d'une image
+void init_image(Image *image, const char *path)
 {
     // Chargement de l'image
     int image_width, image_height, channel_count;
-    stbi_set_flip_vertically_on_load(1); // Inverser verticalement les coordonnées de texture
+    stbi_set_flip_vertically_on_load(1);
     u8 *image_data = stbi_load(path, &image_width, &image_height, &channel_count, STBI_rgb_alpha);
     if (!image_data)
     {
@@ -268,10 +271,9 @@ void render_image(float width, float height, const char *path, float x, float y)
     }
 
     // Initialisation de la texture
-    GLuint texture_id;
-    glGenTextures(1, &texture_id);
+    glGenTextures(1, &image->texture_id);
     glActiveTexture(GL_TEXTURE0);
-    glBindTexture(GL_TEXTURE_2D, texture_id);
+    glBindTexture(GL_TEXTURE_2D, image->texture_id);
 
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
@@ -283,40 +285,14 @@ void render_image(float width, float height, const char *path, float x, float y)
     glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, image_width, image_height, 0, format, GL_UNSIGNED_BYTE, image_data);
     stbi_image_free(image_data);
 
-    // Dessin de l'image
-    float vertices[] = {
-        // Positions        // Coordonnées de texture
-        x, y + height, 0.0f, 1.0f, // bottom-left
-        x, y, 0.0f, 0.0f,          // top-left
-        x + width, y, 1.0f, 0.0f,  // top-right
+    image->width = (float)image_width;
+    image->height = (float)image_height;
+}
 
-        x, y + height, 0.0f, 1.0f,          // bottom-left
-        x + width, y, 1.0f, 0.0f,           // top-right
-        x + width, y + height, 1.0f, 1.0f}; // bottom-right
-
-    // Création et configuration du VAO (Vertex Array Object) et du VBO (Vertex Buffer Object)
-    GLuint vao, vbo;
-    glGenVertexArrays(1, &vao);
-    glGenBuffers(1, &vbo);
-
-    glBindVertexArray(vao);
-
-    glBindBuffer(GL_ARRAY_BUFFER, vbo);
-    glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
-
-    // Position attribute
-    glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 4 * sizeof(float), (void *)0);
-    glEnableVertexAttribArray(0);
-
-    // Texture attribute
-    glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 4 * sizeof(float), (void *)(2 * sizeof(float)));
-    glEnableVertexAttribArray(1);
-
-    // Rendu de l'image
-    glDrawArrays(GL_TRIANGLES, 0, 6);
-
-    // Libération des ressources
-    glDeleteVertexArrays(1, &vao);
-    glDeleteBuffers(1, &vbo);
-    glDeleteTextures(1, &texture_id);
+// Ajout d'une image à la liste de lots
+void render_image(Image *image, vec2 position, vec2 size)
+{
+    vec4 texture_coordinates = {0.0f, 0.0f, 1.0f, 1.0f};
+    append_quad(position, size, texture_coordinates, (vec4){1, 1, 1, 1});
+    render_batch(list_batch->items, list_batch->len, image->texture_id);
 }

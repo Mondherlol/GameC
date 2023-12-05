@@ -15,7 +15,7 @@
 #include "engine/render.h"
 #include "engine/animation.h"
 #include "engine/my_curl.h"
-#include "engine/menu.h"
+#include "engine/scenes.h"
 #include "engine/audio.h"
 
 
@@ -164,7 +164,7 @@ int main(int argc, char *argv[])
 	audio_music_load(&MUSIC_STAGE_1, "assets/breezys_mega_quest_2_stage_1.mp3");
 	audio_music_play(MUSIC_STAGE_1);
 
-    global.current_screen = MENU_SCREEN;
+    scenes_init();
 
     MyCurlHandle curl_handle;
 
@@ -313,6 +313,7 @@ int main(int argc, char *argv[])
         time_update();
         if (global.current_screen == MENU_SCREEN)
         {
+
             display_menu(window);
         }
         else
