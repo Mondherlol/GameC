@@ -6,6 +6,7 @@
 #include "../global.h"
 
 Image menuImage;
+u8 texture_slots[8] = {0};
 
 void menu_init()
 {
@@ -23,8 +24,12 @@ void display_menu(SDL_Window *window)
     float height = global.window_height / render_get_scale();
 
     render_image(&menuImage,
-                 (vec2){0, 0},                                                                       // position
-                 (vec2){menuImage.width / render_get_scale(), menuImage.height / render_get_scale()} // Size
+                 (vec2){0, 0}, // position
+                 (vec2){
+                     menuImage.width / render_get_scale(),
+                     menuImage.height / render_get_scale(),
+                 },
+                 texture_slots // Size
     );
 
     render_text("NON CONNECTE ", width / 2, height * 0.8, RED, 1);
@@ -71,5 +76,7 @@ void display_menu(SDL_Window *window)
         }
     }
 
-    SDL_GL_SwapWindow(window); // Mettre à jour la fenêtre avec le rendu OPENGL
+    render_end(window, texture_slots);
+
+    // SDL_GL_SwapWindow(window); // Mettre à jour la fenêtre avec le rendu OPENGL
 }

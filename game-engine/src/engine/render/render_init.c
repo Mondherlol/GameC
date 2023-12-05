@@ -77,6 +77,13 @@ void render_init_shaders(u32 *shader_default, u32 *shader_batch, float render_wi
         1,
         GL_FALSE,
         &projection[0][0]);
+
+    for (u32 i = 0; i < 8; ++i)
+    {
+        char name[] = "texture_slot_N";
+        sprintf(name, "texture_slot_%u", i);
+        glUniform1i(glGetUniformLocation(*shader_batch, name), i);
+    }
 }
 
 void render_init_color_texture(u32 *texture)
@@ -187,6 +194,9 @@ void render_init_batch_quads(u32 *vao, u32 *vbo, u32 *ebo)
     // [r, g, b, a]
     glEnableVertexAttribArray(2);
     glVertexAttribPointer(2, 4, GL_FLOAT, GL_FALSE, sizeof(Batch_Vertex), (void *)offsetof(Batch_Vertex, color));
+    // Texture slot
+    glEnableVertexAttribArray(3);
+    glVertexAttribPointer(3, 1, GL_FLOAT, GL_FLOAT, sizeof(Batch_Vertex), (void *)offsetof(Batch_Vertex, texture_slot));
 
     glGenBuffers(1, ebo);                                                                             // Generer un element buffer object
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, *ebo);                                                      // Le lier
