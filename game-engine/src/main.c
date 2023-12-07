@@ -265,6 +265,11 @@ int main(int argc, char *argv[])
         {
             display_menu(window);
         }
+        else 
+        if(global.current_screen == SCORE_SCREEN)
+        {
+            display_score(window);
+        }
         else
         {
 
