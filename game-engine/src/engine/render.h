@@ -20,6 +20,8 @@ typedef struct sprite_sheet
     float cell_width;
     float cell_height;
     u32 texture_id;
+    u32 texture_slot;
+
 } Sprite_Sheet;
 
 typedef struct image
@@ -41,8 +43,8 @@ static float scale = 2;
 
 // Procédures habituelles de rendus
 SDL_Window *render_init(void);
-void render_begin(void);                                      // Mettre couleur de fond et vider la liste batch
-void render_end(SDL_Window *window, u32 batch_texture_id[8]); // Effectuer le rendu batch + Mettre à jour la fenêtre avec le rendu OPENGL
+void render_begin(void);                                       // Mettre couleur de fond et vider la liste batch
+void render_end(SDL_Window *window, u32 batch_texture_ids[8]); // Effectuer le rendu batch + Mettre à jour la fenêtre avec le rendu OPENGL
 void render_quad(vec2 pos, vec2 size, vec4 color);
 void render_line_segment(vec2 start, vec2 end, vec4 color); // Dessiner une ligne
 void render_quad_line(vec2 pos, vec2 size, vec4 color);     // Dessiner les lignes d'un quad
@@ -51,8 +53,7 @@ float render_get_scale();
 
 // Rendus de sprite
 void render_sprite_sheet_init(Sprite_Sheet *sprite_sheet, const char *path, float cell_width, float cell_height);
-void render_sprite_sheet_frame(Sprite_Sheet *sprite_sheet, float row, float column, vec2 position, bool is_flipped, u32 texture_slots[8]);
-
+void render_sprite_sheet_frame(Sprite_Sheet *sprite_sheet, float row, float column, vec2 position, bool is_flipped, vec4 color, float texture_slot);
 // Rendu de texte
 void render_text_init();
 void render_text(const char *text, float x, float y, vec4 color, u8 is_centered);

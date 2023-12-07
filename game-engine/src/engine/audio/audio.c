@@ -19,7 +19,7 @@ void audio_init(void)
 	}
 
 	Mix_Volume(-1, 6); // -1 pour tous les canaux, 6 pour baisser le volume par defaut
-	Mix_VolumeMusic(2);
+	Mix_VolumeMusic(10);
 }
 
 // charger les sons

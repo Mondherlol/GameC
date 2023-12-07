@@ -23,6 +23,7 @@ typedef struct global
     float window_height;
     bool should_quit;
     u8 current_screen;
+    char generated_code[8]; // Code de la partie
 
 } Global;
 

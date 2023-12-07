@@ -2,7 +2,7 @@
 
 #include "render.h"
 
-#define MAX_FRAMES 30 // Frame à afficher par seconde de l'animation
+#define MAX_FRAMES 16 // Frame à afficher par seconde de l'animation
 
 typedef struct animation_frame
 {
@@ -34,4 +34,4 @@ size_t animation_create(size_t animation_definition_id, bool does_loop);
 void animation_destroy(size_t id);
 Animation *animation_get(size_t id);
 void animation_update(float dt);
-void animation_render(Animation *animation, vec2 position, vec4 color, u32 texture_slots[8]);
+void animation_render(Animation *animation, vec2 position, vec4 color);

@@ -40,7 +40,6 @@ SDL_Window *render_init_window(u32 width, u32 height)
     printf("Fabriquant de la CG : %s\n", glGetString(GL_VENDOR));
     printf("Carte Graphique utilisée : %s\n", glGetString(GL_RENDERER));
     printf("Version OPEN GL : %s\n", glGetString(GL_VERSION));
-
     return window;
 }
 
@@ -71,7 +70,6 @@ void render_init_shaders(u32 *shader_default, u32 *shader_batch, float render_wi
 
     // Pareil avec le shader batch
     glUseProgram(*shader_batch);
-
     glUniformMatrix4fv(
         glGetUniformLocation(*shader_batch, "projection"),
         1,
@@ -133,7 +131,7 @@ void render_init_quad(u32 *vao, u32 *vbo, u32 *ebo)
 
     // uv
     glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void *)(3 * sizeof(float)));
-    glad_glEnableVertexAttribArray(0);
+    glEnableVertexAttribArray(1);
 
     glBindVertexArray(0);
 }
