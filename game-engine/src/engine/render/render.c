@@ -52,18 +52,20 @@ void render_begin(void)
     list_batch->len = 0;
 }
 
-static void render_batch(Batch_Vertex *vertices, size_t count, u32 texture_id[8])
+static void render_batch(Batch_Vertex *vertices, size_t count, u32 texture_ids[8])
 {
     glBindBuffer(GL_ARRAY_BUFFER, vbo_batch);
     glBufferSubData(GL_ARRAY_BUFFER, 0, count * sizeof(Batch_Vertex), vertices);
 
+    // Texture de couleur
     glActiveTexture(GL_TEXTURE0);
-    glBindTexture(GL_TEXTURE_2D, texture_color);
+    glBindTexture(GL_TEXTURE_2D, texture_ids[1]);
 
+    // Le reste des textures
     for (u32 i = 1; i < 8; ++i)
     {
         glActiveTexture(GL_TEXTURE0 + i);
-        glBindTexture(GL_TEXTURE_2D, texture_id[i]);
+        glBindTexture(GL_TEXTURE_2D, texture_ids[i]);
     }
 
     glUseProgram(shader_batch);
@@ -138,6 +140,7 @@ void render_quad(vec2 pos, vec2 size, vec4 color)
 
     glBindVertexArray(vao_quad);
 
+    glActiveTexture(GL_TEXTURE0);
     glBindTexture(GL_TEXTURE_2D, texture_color);
     // glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
     glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, NULL);
@@ -209,6 +212,8 @@ void render_aabb(float *aabb, vec4 color)
     render_quad_line(&aabb[0], size, color);
 }
 
+static u32 next_sprite_sheet_slot = 1;
+
 void render_sprite_sheet_init(Sprite_Sheet *sprite_sheet, const char *path, float cell_width, float cell_height)
 {
     glGenTextures(1, &sprite_sheet->texture_id);
@@ -233,6 +238,7 @@ void render_sprite_sheet_init(Sprite_Sheet *sprite_sheet, const char *path, floa
     sprite_sheet->height = (float)height;
     sprite_sheet->cell_width = cell_width;
     sprite_sheet->cell_height = cell_height;
+    sprite_sheet->texture_slot = next_sprite_sheet_slot++;
 }
 
 static void calculate_sprite_texture_coordinates(vec4 result, float row, float column, float texture_width, float texture_height, float cell_width, float cell_height)
@@ -277,7 +283,7 @@ static i32 try_insert_texture(u32 texture_slots[8], u32 texture_id)
     return -1;
 }
 
-void render_sprite_sheet_frame(Sprite_Sheet *sprite_sheet, float row, float column, vec2 position, bool is_flipped, u32 texture_slots[8])
+void render_sprite_sheet_frame(Sprite_Sheet *sprite_sheet, float row, float column, vec2 position, bool is_flipped, vec4 color, float texture_slot)
 {
     vec4 uvs;
     calculate_sprite_texture_coordinates(uvs, row, column, sprite_sheet->width, sprite_sheet->height, sprite_sheet->cell_width, sprite_sheet->cell_height);
@@ -292,13 +298,7 @@ void render_sprite_sheet_frame(Sprite_Sheet *sprite_sheet, float row, float colu
     vec2 size = {sprite_sheet->cell_width, sprite_sheet->cell_height};
     vec2 bottom_left = {position[0] - size[0] * 0.5, position[1] - size[1] * 0.5};
 
-    i32 texture_slot = try_insert_texture(texture_slots, sprite_sheet->texture_id);
-    if (texture_slot == -1)
-    {
-        // Faire autre chose
-    }
-
-    append_quad(bottom_left, size, uvs, (vec4){1, 1, 1, 1}, (float)texture_slot);
+    append_quad(bottom_left, size, uvs, color, texture_slot);
 }
 
 float render_get_scale()
@@ -312,7 +312,7 @@ void init_image(Image *image, const char *path)
     // Chargement de l'image
     int image_width, image_height, channel_count;
     stbi_set_flip_vertically_on_load(1);
-    u8 *image_data = stbi_load(path, &image_width, &image_height, &channel_count, STBI_rgb_alpha);
+    u8 *image_data = stbi_load(path, &image_width, &image_height, &channel_count, 0);
     if (!image_data)
     {
         ERROR_EXIT("Erreur lors du chargement de l'image :  %s\n", path);
@@ -333,6 +333,9 @@ void init_image(Image *image, const char *path)
     glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, image_width, image_height, 0, format, GL_UNSIGNED_BYTE, image_data);
     stbi_image_free(image_data);
 
+    // glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, image_width, image_height, 0, GL_RGBA, GL_UNSIGNED_BYTE, image_data);
+    // stbi_image_free(image_data);
+
     image->width = (float)image_width;
     image->height = (float)image_height;
 }
@@ -349,9 +352,4 @@ void render_image(Image *image, vec2 position, vec2 size, u32 texture_slots[8])
     }
 
     append_quad(position, size, texture_coordinates, (vec4){1, 1, 1, 1}, (float)texture_slot);
-
-    // append_quad(bottom_left, size, uvs, (vec4){1, 1, 1, 1}, (float)texture_slot);
-
-    // append_quad(position, size, texture_coordinates, (vec4){1, 1, 1, 1});
-    // render_batch(list_batch->items, list_batch->len, image->texture_id);
 }

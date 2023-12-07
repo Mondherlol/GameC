@@ -57,7 +57,7 @@ void render_text_init()
         ERROR_EXIT("\nImpossible de charger la police d'ecriture \n");
     }
 
-    FT_Set_Pixel_Sizes(face, 0, 48);
+    FT_Set_Pixel_Sizes(face, 0, 30);
 
     g = face->glyph;
 
@@ -128,6 +128,7 @@ void render_text_init()
 
 void render_text(const char *text, float x, float y, vec4 color, u8 is_centered)
 {
+
     glUseProgram(text_shader);
 
     glUniform4fv(glGetUniformLocation(text_shader, "color"), 1, color);
