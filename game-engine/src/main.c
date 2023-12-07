@@ -2,9 +2,9 @@
 #include <stdbool.h>
 #include <stdlib.h>
 #include <glad/glad.h>
+
 #define SDL_MAIN_HANDLED
 #include <SDL2/SDL.h>
-
 #include "engine/util.h"
 #include "engine/global.h"
 #include "engine/config.h"

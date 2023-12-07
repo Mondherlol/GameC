@@ -1,10 +1,11 @@
 #include <stdio.h>
 #include <SDL2/SDL.h>
+#include <stdlib.h>
 #include "../scenes.h"
 #include "../render.h"
 #include "../util.h"
 #include "../global.h"
-
+#include "../my_curl.h"
 
 #define MENU_ITEMS_COUNT 3
 
@@ -15,11 +16,27 @@ int currentSelection = 0;
 
 u8 texture_slots[8] = {0};
 
+MyCurlHandle curl_handle_test;
+
 void menu_init()
 {
+    //  // Obtenir les dimensions de la fenetre
+    float width = global.window_width / render_get_scale();
+    float height = global.window_height / render_get_scale();
+
     init_image(&menuImages[0], "assets/1menu_selected_play.png");
     init_image(&menuImages[1], "assets/2menu_selected_scores.png");
     init_image(&menuImages[2], "assets/3menu_selected_quit.png");
+    
+   mycurl_init(&curl_handle_test);
+        //  printf("Test de la route /ping avec une requête GET...\n");
+        //             if (mycurl_get(&curl_handle_test, "/game/generercode") != 0)
+        //             {
+        //                 fprintf(stderr, "La requête GET vers /ping a échoué.\n");
+        //             }
+         
+       
+                
 }
 
 void display_menu(SDL_Window *window)
@@ -44,11 +61,12 @@ void display_menu(SDL_Window *window)
    
      
     //render_text("NON CONNECTE ", width / 2, height * 0.8, RED, 1);
-
     // render_text("Game Menu", width / 2, height * 0.8, WHITE, 1);
     // render_text("1. Start Game", width / 2, height * 0.5, WHITE, 1);
     // render_text("2. Options", width / 2, height * 0.4, WHITE, 1);
     // render_text("3. Quit", width / 2, height * 0.3, WHITE, 1);
+
+
 
     if (global.input.escape || global.input.start_controller)
         global.should_quit = true;
@@ -65,7 +83,7 @@ void display_menu(SDL_Window *window)
             break;
         case SDL_KEYDOWN:
             switch (menuEvent.key.keysym.sym)
-            {
+            {                   
             case SDLK_UP:
                 // Changer la sélection vers l'image précédente
                 currentSelection = (currentSelection - 1 + MENU_ITEMS_COUNT) % MENU_ITEMS_COUNT;
@@ -75,16 +93,18 @@ void display_menu(SDL_Window *window)
                 break;
             case SDLK_RETURN:
                 // Gérer la sélection en fonction de currentSelection
+               
                 switch (currentSelection)
                 {
                 case 0:
+                    
                     global.current_screen = GAME_SCREEN;
                     break;
                 case 1:
                     global.current_screen = SETTINGS_SCREEN;
                     break;
                 case 2:
-                    global.should_quit = true;
+                    global.should_quit = true; //Quitter le jeu
                     break;
                 }
                 break;
