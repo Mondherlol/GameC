@@ -1,7 +1,6 @@
 
 #include <stdlib.h>  // Pour malloc et free
 #include <windows.h> // Pour le multithread
-
 #include "../my_curl.h"
 #include "../util.h"
 #include "../global.h"
@@ -15,6 +14,7 @@ void mycurl_init(MyCurlHandle *handle)
     {
         ERROR_EXIT("\nErreur lors de l'initialisation de libcurl :  %s\n", stderr);
     }
+
 }
 
 // Fonction de rappel pour gérer les données de la réponse

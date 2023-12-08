@@ -2,9 +2,9 @@
 #include <stdbool.h>
 #include <stdlib.h>
 #include <glad/glad.h>
+
 #define SDL_MAIN_HANDLED
 #include <SDL2/SDL.h>
-
 #include "engine/util.h"
 #include "engine/global.h"
 #include "engine/config.h"
@@ -264,6 +264,11 @@ int main(int argc, char *argv[])
         if (global.current_screen == MENU_SCREEN)
         {
             display_menu(window);
+        }
+        else 
+        if(global.current_screen == SCORE_SCREEN)
+        {
+            display_score(window);
         }
         else
         {
