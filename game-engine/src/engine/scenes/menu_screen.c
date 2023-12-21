@@ -24,9 +24,9 @@ float height;
 void menu_init()
 {
 
-    init_image(&menuImages[0], "assets/1menu_selected_play.png");
-    init_image(&menuImages[1], "assets/2menu_selected_scores.png");
-    init_image(&menuImages[2], "assets/3menu_selected_quit.png");
+    init_image(&menuImages[0], "assets/menu/1menu_selected_play.png");
+    init_image(&menuImages[1], "assets/menu/2menu_selected_scores.png");
+    init_image(&menuImages[2], "assets/menu/3menu_selected_quit.png");
 
     width = global.window_width / render_get_scale();
 

@@ -50,7 +50,7 @@ void render_text_init()
     }
 
     // Charger font
-    if (FT_New_Face(ft, "./assets/8-BIT_WONDER.TTF", 0, &face))
+    if (FT_New_Face(ft, "./assets/font/8-BIT_WONDER.TTF", 0, &face))
     {
         ERROR_EXIT("\nImpossible de charger la police d'ecriture \n");
     }

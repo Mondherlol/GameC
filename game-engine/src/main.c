@@ -27,12 +27,14 @@ static Mix_Chunk *SOUND_JUMP;
 
 static Sprite_Sheet sprite_sheet_player;
 static Sprite_Sheet sprite_sheet_map;
+static Sprite_Sheet sprite_sheet_enemy_small;
+static Sprite_Sheet sprite_sheet_enemy_large;
 
 static const float SPEED_PLAYER = 250;
 static const float JUMP_VELOCITY = 1350;
-static const float GROUNDED_TIME = 0.1; // Temps passé au sol
-static const float SPEED_ENEMY_LARGE = 200;
-static const float SPEED_ENEMY_SMALL = 4000;
+static const float GROUNDED_TIME = 0.1f; // Temps passé au sol
+static const float SPEED_ENEMY_LARGE = 80;
+static const float SPEED_ENEMY_SMALL = 100;
 static const float HEALTH_ENEMY_LARGE = 7;
 static const float HEALTH_ENEMY_SMALL = 3;
 
@@ -41,25 +43,30 @@ typedef enum collision_layer
     COLLISION_LAYER_PLAYER = 1,
     COLLISION_LAYER_ENEMY = 1 << 1,
     COLLISION_LAYER_TERRAIN = 1 << 2,
+    COLLISION_LAYER_ENEMY_PASSTHROUGH = 1 << 3,
 } Collision_Layer;
 
 static const u8 enemy_mask = COLLISION_LAYER_PLAYER | COLLISION_LAYER_TERRAIN;
-static const u8 player_mask = COLLISION_LAYER_ENEMY | COLLISION_LAYER_TERRAIN;
+static u8 player_mask = COLLISION_LAYER_ENEMY | COLLISION_LAYER_TERRAIN | COLLISION_LAYER_ENEMY_PASSTHROUGH;
 static const u8 fire_mask = COLLISION_LAYER_ENEMY | COLLISION_LAYER_PLAYER;
 
 static SDL_Window *window;
+
+static size_t player_id;
+
 static size_t anim_player_walk_id;
 static size_t anim_player_idle_id;
+static size_t anim_ennemy_small_run_id;
+static size_t anim_ennemy_large_run_id;
+static size_t anim_enemy_small_enraged_id;
+static size_t anim_enemy_large_enraged_id;
 
-// States
+// Var d'états
 bool player_is_grounded = false;
-static vec2 pos;
 static float spawn_timer = 0;
 static float ground_timer = 0;
 
-// Debugage
 static u32 texture_slots[8] = {0};
-static size_t player_id;
 
 static void input_handle(Body *body_player)
 {
@@ -116,27 +123,59 @@ void player_on_hit_static(Body *self, Static_Body *other, Hit hit)
 /**/
 void enemy_small_on_hit_static(Body *self, Static_Body *other, Hit hit)
 {
+    Entity *entity = entity_get(self->entity_id);
+
     if (hit.normal[0] > 0)
     {
-        self->velocity[0] = SPEED_ENEMY_SMALL;
+        if (entity->is_enraged)
+        {
+            self->velocity[0] = SPEED_ENEMY_SMALL * 1.5f;
+        }
+        else
+        {
+            self->velocity[0] = SPEED_ENEMY_SMALL;
+        }
     }
 
     if (hit.normal[0] < 0)
     {
-        self->velocity[0] = -SPEED_ENEMY_SMALL;
+        if (entity->is_enraged)
+        {
+            self->velocity[0] = -SPEED_ENEMY_SMALL * 1.5f;
+        }
+        else
+        {
+            self->velocity[0] = -SPEED_ENEMY_SMALL;
+        }
     }
 }
 /**/
 void enemy_large_on_hit_static(Body *self, Static_Body *other, Hit hit)
 {
+    Entity *entity = entity_get(self->entity_id);
+
     if (hit.normal[0] > 0)
     {
-        self->velocity[0] = SPEED_ENEMY_LARGE;
+        if (entity->is_enraged)
+        {
+            self->velocity[0] = SPEED_ENEMY_LARGE * 1.5f;
+        }
+        else
+        {
+            self->velocity[0] = SPEED_ENEMY_LARGE;
+        }
     }
 
     if (hit.normal[0] < 0)
     {
-        self->velocity[0] = -SPEED_ENEMY_LARGE;
+        if (entity->is_enraged)
+        {
+            self->velocity[0] = -SPEED_ENEMY_LARGE * 1.5f;
+        }
+        else
+        {
+            self->velocity[0] = -SPEED_ENEMY_LARGE;
+        }
     }
 }
 
@@ -160,17 +199,37 @@ void fire_on_hit(Body *self, Body *other, Hit hit)
     }
 }
 
-void ennemy_on_hit_static(Body *self, Static_Body *other, Hit hit)
+void spawn_enemy(bool is_small, bool is_enraged, bool is_flipped)
 {
-    if (hit.normal[0] > 0) // Le fait changer de direction lorsqu'il cogne un mur
+    float spawn_x = is_flipped ? render_width : 0;
+    vec2 position = {spawn_x, (render_height - 64)};
+    float speed = SPEED_ENEMY_LARGE;
+    vec2 size = {20, 20};
+    vec2 sprite_offset = {0, 5};
+    size_t animation_id = anim_ennemy_large_run_id;
+    On_Hit_Static on_hit_static = enemy_large_on_hit_static;
+
+    if (is_small)
     {
-        self->velocity[0] = 400;
+        size[0] = 12;
+        size[1] = 12;
+        sprite_offset[0] = 0;
+        sprite_offset[1] = 14;
+        animation_id = anim_ennemy_small_run_id;
+        on_hit_static = enemy_small_on_hit_static;
+        speed = SPEED_ENEMY_SMALL;
     }
 
-    if (hit.normal[0] < 0)
+    if (is_enraged)
     {
-        self->velocity[0] = -400;
+        speed *= 1.5;
+        // animation_id = is_small ? anim_enemy_small_enraged_id : anim_enemy_large_enraged_id;
     }
+
+    vec2 velocity = {is_flipped ? -speed : speed, 0};
+    size_t id = entity_create(position, size, sprite_offset, velocity, COLLISION_LAYER_ENEMY, enemy_mask, false, animation_id, NULL, on_hit_static);
+    Entity *entity = entity_get(id);
+    entity->is_enraged = is_enraged;
 }
 
 void reset(void)
@@ -188,7 +247,7 @@ void reset(void)
 
     player_id = entity_create((vec2){100, 200}, // Postion (x,y)
                               (vec2){24, 24},   // Size
-                              (vec2){0, 6},     // Offset sprite
+                              (vec2){0, 0},     // Offset sprite
                               (vec2){0, 0},     // Velocité
                               COLLISION_LAYER_PLAYER,
                               player_mask,
@@ -209,8 +268,8 @@ void reset(void)
         physics_static_body_create((vec2){width - 32 - 64, height - 32 * 3 - 16}, (vec2){128, 32}, COLLISION_LAYER_TERRAIN);
         physics_static_body_create((vec2){width * 0.5, height - 32 * 3 - 16}, (vec2){192, 32}, COLLISION_LAYER_TERRAIN);
         physics_static_body_create((vec2){width * 0.5, 32 * 3 + 24}, (vec2){448, 32}, COLLISION_LAYER_TERRAIN);
-        physics_static_body_create((vec2){16, height - 64}, (vec2){32, 64}, COLLISION_LAYER_TERRAIN);         // Spawn ennemis de gauche
-        physics_static_body_create((vec2){width - 16, height - 64}, (vec2){32, 64}, COLLISION_LAYER_TERRAIN); // Spawn ennemis de droite
+        physics_static_body_create((vec2){16, height - 64}, (vec2){32, 64}, COLLISION_LAYER_ENEMY_PASSTHROUGH);         // Spawn ennemis de gauche
+        physics_static_body_create((vec2){width - 16, height - 64}, (vec2){32, 64}, COLLISION_LAYER_ENEMY_PASSTHROUGH); // Spawn ennemis de droite
 
         // Reste à creer le feu.
     }
@@ -237,8 +296,8 @@ int main(int argc, char *argv[])
 
     // Initialiser audio
     {
-        audio_sound_load(&SOUND_JUMP, "assets/jump.wav");
-        audio_music_load(&MUSIC_STAGE_1, "assets/breezys_mega_quest_2_stage_1.mp3");
+        audio_sound_load(&SOUND_JUMP, "assets/audio/jump.wav");
+        audio_music_load(&MUSIC_STAGE_1, "assets/audio/breezys_mega_quest_2_stage_1.mp3");
     }
 
     // Initialiser curl
@@ -248,8 +307,10 @@ int main(int argc, char *argv[])
 
     // Initialiser sprites
     {
-        render_sprite_sheet_init(&sprite_sheet_player, "assets/player.png", 24, 24);
-        render_sprite_sheet_init(&sprite_sheet_map, "assets/level_1_map.png", 640, 360);
+        render_sprite_sheet_init(&sprite_sheet_player, "assets/spritesheets/player.png", 24, 24);
+        render_sprite_sheet_init(&sprite_sheet_map, "assets/spritesheets/level_1_map.png", 640, 360);
+        render_sprite_sheet_init(&sprite_sheet_enemy_small, "assets/spritesheets/bunny_run(34x44).png", 34, 44);
+        render_sprite_sheet_init(&sprite_sheet_enemy_large, "assets/spritesheets/rhino_run(52x34).png", 52, 34);
     }
 
     // Initialiser animations
@@ -260,6 +321,13 @@ int main(int argc, char *argv[])
 
         anim_player_walk_id = animation_create(adef_player_walk_id, true);
         anim_player_idle_id = animation_create(adef_player_idle_id, false);
+
+        // Ennemis
+        size_t adef_ennemy_small_run_id = animation_definition_create(&sprite_sheet_enemy_small, 0.1, 0, (u8[]){0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11}, 12);
+        size_t adef_ennemy_large_run_id = animation_definition_create(&sprite_sheet_enemy_large, 0.1, 0, (u8[]){0, 1, 2, 3, 4, 5}, 6);
+
+        anim_ennemy_small_run_id = animation_create(adef_ennemy_small_run_id, true);
+        anim_ennemy_large_run_id = animation_create(adef_ennemy_large_run_id, true);
     }
 
     reset();
@@ -330,6 +398,22 @@ int main(int argc, char *argv[])
 
             animation_update(global.time.delta);
 
+            // Spawn enemies.
+            {
+                if (spawn_timer <= 0)
+                {
+                    spawn_timer = (float)((rand() % 200) + 200) / 100.f;
+
+                    spawn_timer *= 0.2;
+
+                    bool is_flipped = rand() % 100 >= 50;
+                    bool is_small = rand() % 100 > 18;
+
+                    float spawn_x = is_flipped ? 540 : 100;
+                    spawn_enemy(is_small, false, is_flipped);
+                }
+            }
+
             render_begin();
 
             // #if DEBUG
@@ -340,7 +424,7 @@ int main(int argc, char *argv[])
 
                 if (body->is_active)
                 {
-                    render_aabb((float *)body, TURQUOISE);
+                    render_aabb((float *)body, YELLOW);
                 }
                 else
                 {

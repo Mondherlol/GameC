@@ -12,7 +12,7 @@ u8 score_screen_texture_slots[8] = {0};
 
 void score_init()
 {
-    init_image(&menuImage, "assets/Mondher/Scores.png");
+    init_image(&menuImage, "assets/menu/Scores.png");
 }
 
 void display_score(SDL_Window *window)

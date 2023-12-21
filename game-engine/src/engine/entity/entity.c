@@ -44,7 +44,9 @@ size_t entity_create(vec2 position, vec2 size, vec2 sprite_offset, vec2 velocity
             collision_mask,
             is_kinematic,
             on_hit,
-            on_hit_static),
+            on_hit_static,
+            id),
+        .sprite_offset = {sprite_offset[0], sprite_offset[1]},
 
     };
 
@@ -92,24 +94,22 @@ Entity *entity_by_body_id(size_t body_id)
     return NULL;
 }
 
-void entity_damage(size_t entity_id, u8 amount)
+bool entity_damage(size_t entity_id, u8 amount)
 {
-    // Blesser l'entité....A faire
+    Entity *entity = entity_get(entity_id);
+    if (amount >= entity->health)
+    {
+        entity_destroy(entity_id);
+        return true;
+    }
+
+    entity->health -= amount;
+    return false;
 }
 
 void entity_destroy(size_t entity_id) // Detruire l'entité
 {
     Entity *entity = entity_get(entity_id);
-
-    if (entity->body_id != (size_t)-1)
-    {
-        physics_body_destroy(entity->body_id);
-    }
-
-    if (entity->animation_id != (size_t)-1)
-    {
-        animation_destroy(entity->animation_id);
-    }
-
+    physics_body_destroy(entity->body_id);
     entity->is_active = false;
 }

@@ -13,6 +13,7 @@ typedef struct entity
     vec2 sprite_offset; // Decalage du spirte par rapport a la position du corps
     u32 texture_slot;   // Emplacement de sa texture pour le rendu
     bool is_active;
+    bool is_enraged;
     u8 health; // Points de vie
 
 } Entity;
@@ -26,5 +27,5 @@ void entity_reset(void);
 Entity *entity_by_body_id(size_t body_id);   //  Obtenir un pointeur vers une entité à partir de son body id
 size_t entity_id_by_body_id(size_t body_id); // Fonction pour obtenir l'id d'une entité à partir de son body id
 
-void entity_damage(size_t entity_id, u8 amount); // Infliger des degats
+bool entity_damage(size_t entity_id, u8 amount); // Infliger des degats
 void entity_destroy(size_t entity_id);

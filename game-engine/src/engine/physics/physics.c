@@ -6,7 +6,7 @@
 
 static Physics_State_Internal state;
 
-static u32 iterations = 1;
+static u32 iterations = 4;
 static float tick_rate;
 
 // Initalise le min et le max d'un aabb
@@ -95,7 +95,7 @@ void physics_init(void)
     state.body_list = array_list_create(sizeof(Body), 0); // On crée une liste vide qui va contenir des struct Body
     state.static_body_list = array_list_create(sizeof(Static_Body), 0);
 
-    state.gravity = -100;
+    state.gravity = -79;
     state.terminal_velocity = -7000;
 
     tick_rate = 1.f / iterations;
@@ -315,8 +315,8 @@ void physics_update(void)
             }
         }
 
-        body->velocity[0] += body->acceleration[0];
-        body->velocity[0] += body->acceleration[1];
+        body->velocity[0] += body->acceleration[0]; // Incrémenter la velocité selon l'acceleration et le temps écoulé
+        body->velocity[1] += body->acceleration[1]; // Pareil pour la velocité y
 
         vec2 scaled_velocity;
         vec2_scale(scaled_velocity, body->velocity, global.time.delta * tick_rate);
@@ -326,23 +326,17 @@ void physics_update(void)
             sweep_response(body, scaled_velocity);
             stationnary_response(body);
         }
-
-        // body->velocity[0] += body->acceleration[0] * global.time.delta;  // Incrémenter la velocité selon l'acceleration et le temps écoulé
-        // body->velocity[1] += body->acceleration[1] * global.time.delta;  // Pareil pour la velocité y
-
-        // body->aabb.position[0] += body->velocity[0] * global.time.delta; // Déplacer l'objet selon la velocité
-        // body->aabb.position[1] += body->velocity[0] * global.time.delta; // Pareil pour la position y
     }
 }
-size_t physics_body_create(vec2 position, vec2 size, vec2 velocity, u8 collision_layer, u8 collision_mask, bool is_kinematic, On_Hit on_hit, On_Hit_Static on_hit_static)
+
+size_t physics_body_create(vec2 position, vec2 size, vec2 velocity, u8 collision_layer, u8 collision_mask, bool is_kinematic, On_Hit on_hit, On_Hit_Static on_hit_static, size_t entity_id)
 {
     size_t id = state.body_list->len;
 
-    // Find inactive body
+    // Trouver corps inactif
 
     for (size_t i = 0; i < state.body_list->len; ++i)
     {
-
         Body *body = array_list_get(state.body_list, i);
         if (!body->is_active)
         {
@@ -356,7 +350,9 @@ size_t physics_body_create(vec2 position, vec2 size, vec2 velocity, u8 collision
         if (array_list_append(state.body_list, &(Body){0}) == (size_t)-1) // L'ajouter à la liste de body
             ERROR_EXIT("Erreur lors de l'ajout du Body à la liste\n");
     }
+
     Body *body = physics_body_get(id);
+
     *body = (Body){
         .aabb = {
             .position = {position[0], position[1]},
@@ -368,7 +364,7 @@ size_t physics_body_create(vec2 position, vec2 size, vec2 velocity, u8 collision
         .on_hit_static = on_hit_static,
         .is_kinematic = is_kinematic,
         .is_active = true,
-    };
+        .entity_id = entity_id};
     return id;
 }
 Body *physics_body_get(size_t index)
