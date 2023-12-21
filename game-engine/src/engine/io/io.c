@@ -94,3 +94,21 @@ int io_file_write(void *buffer, size_t size, const char *path)
 
     return 0;
 }
+
+int io_file_append(void *buffer, size_t size, const char *path)
+{
+    FILE *fp = fopen(path, "ab");
+    if (!fp || ferror(fp))
+        ERROR_RETURN(1, "Impossible d'ecrire dans le fichier : %s.\n", path);
+
+    size_t chunks_written = fwrite(buffer, size, 1, fp);
+
+    fclose(fp);
+
+    if (chunks_written != 1)
+        ERROR_RETURN(1, "Erreur d'ecriture."
+                        "1 Chunk attendu, reçu : %zu.\n",
+                     chunks_written);
+
+    return 0;
+}

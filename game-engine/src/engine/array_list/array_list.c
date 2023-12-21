@@ -14,6 +14,7 @@ Array_List *array_list_create(size_t item_size, size_t initial_capacity)
     list->item_size = item_size;
     list->capacity = initial_capacity;
     list->len = 0;
+    
     list->items = malloc(item_size * initial_capacity);
 
     if (!list->items)

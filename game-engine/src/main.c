@@ -227,6 +227,7 @@ int main(int argc, char *argv[])
     render_text_init();
     audio_init();
     scenes_init();
+    score_init();
 
     SDL_ShowCursor(false); // Cacher le curseur
 

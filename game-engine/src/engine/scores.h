@@ -18,7 +18,10 @@ typedef struct
 } Score;
 
 // Fonction pour écrire un score dans le fichier des scores locaux
-void WriteLocalScore(const char *nom, int score);
+// void WriteLocalScore(const char *nom, int score);
 
 // Fonction pour obtenir les scores locaux depuis le fichier
-Score* GetLocalScore();
+// Score* GetLocalScore();
+
+static int Score_load(void);
+void score_init(void);

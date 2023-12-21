@@ -50,13 +50,15 @@ static void load_controls(const char *config_buffer)
     config_key_bind(INPUT_KEY_DOWN, config_get_value(config_buffer, "down"));
     config_key_bind(INPUT_KEY_ESCAPE, config_get_value(config_buffer, "escape"));
 }
-
+//charger le fichier config.ini 
 static int config_load(void)
 {
     File file_config = io_file_read("./config.ini");
     if (!file_config.is_valid)
-        return 1;
+        return 1;//erreur
 
+
+    //lier les touches avec le fichier config.ini
     load_controls(file_config.data);
 
     free(file_config.data);
@@ -64,8 +66,10 @@ static int config_load(void)
     return 0;
 }
 
+//
 void config_init(void)
 {
+    //il a resussi a louvrir et lire les donnnees 
     if (config_load() == 0)
         return;
 
