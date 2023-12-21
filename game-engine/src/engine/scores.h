@@ -21,4 +21,4 @@ typedef struct
 void WriteLocalScore(const char *nom, int score);
 
 // Fonction pour obtenir les scores locaux depuis le fichier
-Score* GetLocalScore();
+Score *GetLocalScore();

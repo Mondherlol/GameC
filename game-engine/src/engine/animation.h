@@ -20,7 +20,7 @@ typedef struct animation_definition
 
 typedef struct animation
 {
-    Animation_Definition *definition;
+    size_t animation_definition_id;
     float current_frame_time;
     u8 current_frame_index;
     bool does_loop;
@@ -29,9 +29,9 @@ typedef struct animation
 } Animation;
 
 void animation_init(void);
-size_t animation_definition_create(Sprite_Sheet *sprite_sheet, float *durations, u8 *rows, u8 *columns, u8 frame_count);
+size_t animation_definition_create(Sprite_Sheet *sprite_sheet, float duration, u8 row, u8 *columns, u8 frame_count);
 size_t animation_create(size_t animation_definition_id, bool does_loop);
 void animation_destroy(size_t id);
 Animation *animation_get(size_t id);
 void animation_update(float dt);
-void animation_render(Animation *animation, vec2 position, vec4 color);
+void animation_render(Animation *animation, vec2 position, vec4 color, u32 texture_slots[8]);

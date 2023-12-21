@@ -60,7 +60,11 @@
     "*.ejs": "html",
     "global.h": "c",
     "render_internal.h": "c",
-    "linmath.h": "c"
+    "linmath.h": "c",
+    "ft2build.h": "c",
+    "types.h": "c",
+    "render.h": "c",
+    "my_curl.h": "c"
   },
   "C_Cpp.errorSquiggles": "disabled"
 }

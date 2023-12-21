@@ -1,12 +1,17 @@
 #include <glad/glad.h>
 #include <SDL2/SDL.h>
 #include <stdbool.h>
+#include <ft2build.h>
+#include FT_FREETYPE_H
 
 #include "../util.h"
 #include "../global.h"
 
 #include "../render.h"
 #include "../render_internal.h"
+
+static FT_Face face;
+static FT_GlyphSlot g;
 
 // Créer fenêtre + charger OPEN GL
 SDL_Window *render_init_window(u32 width, u32 height)
@@ -46,7 +51,6 @@ SDL_Window *render_init_window(u32 width, u32 height)
 void render_init_shaders(u32 *shader_default, u32 *shader_batch, float render_width, float render_height)
 {
     mat4x4 projection; // Matrice de projection
-
     // Créer le shader par défaut       //Shader vertex (pour la forme)   //Shader frag (pour les couleurs)
     *shader_default = render_shader_create("./shaders/default.vert", "./shaders/default.frag");
 
@@ -56,6 +60,9 @@ void render_init_shaders(u32 *shader_default, u32 *shader_batch, float render_wi
         0001    qui permet de representer
         0010    l'objet créé dans la fenêtre
         0100]   en 2D .                      */
+
+    mat4x4_identity(projection);
+
     mat4x4_ortho(projection, 0, render_width, 0, render_height, -2, 2);
 
     // Lui appliquer le shader par défaut

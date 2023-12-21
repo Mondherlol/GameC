@@ -2,7 +2,7 @@
 #include <stdlib.h>
 #include <stdbool.h>
 #include <string.h>
-#include "io.h" 
+#include "io.h"
 
 #define SCORE_FILE_PATH "scores.txt"
 
@@ -10,7 +10,7 @@
 void WriteLocalScore(const char *nom, int score)
 {
     print("writing local score")
-    FILE *fp = fopen(SCORE_FILE_PATH, "a");
+        FILE *fp = fopen(SCORE_FILE_PATH, "a");
     if (!fp || ferror(fp))
     {
         fprintf(stderr, "Erreur lors de l'ouverture du fichier des scores en écriture.\n");
@@ -19,12 +19,12 @@ void WriteLocalScore(const char *nom, int score)
 
     // Écrire le nouveau score dans le fichier
     fprintf(fp, "%s %d\n", nom, score);
-    
+
     fclose(fp);
 }
 
 // Fonction pour obtenir les scores locaux depuis le fichier
-Score* GetLocalScore()
+Score *GetLocalScore()
 {
     // Lire le fichier des scores
     File file = io_file_read(SCORE_FILE_PATH);

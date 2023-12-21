@@ -28,8 +28,6 @@ void menu_init()
     init_image(&menuImages[1], "assets/2menu_selected_scores.png");
     init_image(&menuImages[2], "assets/3menu_selected_quit.png");
 
-    // init_image(&menuImages[0], "assets/black.png");
-
     width = global.window_width / render_get_scale();
 
     height = global.window_height / render_get_scale();
@@ -54,25 +52,10 @@ void display_menu(SDL_Window *window)
     // mise a jour de l'entree de lutilisateur
     input_update();
 
-    // render_text("Rendu avant l'image", width / 2, height * 0.8, RED, 1);
-
-    // render_image(&menuImages[currentSelection],
-    //              (vec2){0, 0},                                                                                                              // position
-    //              (vec2){menuImages[currentSelection].width / render_get_scale(), menuImages[currentSelection].height / render_get_scale()}, // taille
-    //              texture_slots);
-
-    // render_text("Rendu apres l'image", width / 2, height * 0.5, RED, 1);
-
-    render_text(global.generated_code, 55, height * 0.86, YELLOW, 1);
-
-    // render_text("1. Start Game", width / 2, height * 0.5, WHITE, 1);
-    // render_text("2. Options", width / 2, height * 0.4, WHITE, 1);
-    // render_text("3. Quit", width / 2, height * 0.3, WHITE, 1);
-
-
-
-    // if (global.input.escape || global.input.start_controller)
-    //     global.should_quit = true;
+    render_image(&menuImages[currentSelection],
+                 (vec2){0, 0},                                                                                                              // position
+                 (vec2){menuImages[currentSelection].width / render_get_scale(), menuImages[currentSelection].height / render_get_scale()}, // taille
+                 texture_slots);
 
     SDL_Event menuEvent;
 
@@ -86,7 +69,7 @@ void display_menu(SDL_Window *window)
         case SDL_KEYDOWN:
             switch (menuEvent.key.keysym.sym)
             {
-            
+
             case SDLK_UP:
                 // Changer la sélection vers l'image précédente
                 currentSelection = (currentSelection - 1 + MENU_ITEMS_COUNT) % MENU_ITEMS_COUNT;
@@ -105,7 +88,7 @@ void display_menu(SDL_Window *window)
                     global.current_screen = SCORE_SCREEN;
                     break;
                 case 2:
-                    global.should_quit = true; //Quitter le jeu
+                    global.should_quit = true; // Quitter le jeu
                     break;
                 }
                 break;
@@ -118,7 +101,9 @@ void display_menu(SDL_Window *window)
         }
     }
 
-    render_end(window, texture_slots);
+    render_textures(texture_slots);
 
-    //SDL_GL_SwapWindow(window); // Mettre à jour la fenêtre avec le rendu OPENGL
+    render_text(global.generated_code, 55, height * 0.86, YELLOW, 1);
+
+    render_end(window);
 }

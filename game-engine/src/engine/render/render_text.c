@@ -5,15 +5,6 @@
 #include "../render.h"
 #include "../util.h"
 
-static FT_Face face;
-static FT_GlyphSlot g;
-
-u32 text_vao;
-u32 text_vbo;
-u32 text_shader;
-u32 text_texture;
-mat4x4 projection;
-
 typedef struct character_data
 {
     u32 texture;
@@ -27,16 +18,23 @@ typedef struct character_data
 
 static Character_Data character_data_array[128];
 
+static FT_Face face;
+static FT_GlyphSlot g;
+
+static u32 vao_text;
+static u32 vbo_text;
+static u32 shader_text;
+
 void render_text_init()
 {
     // Initialiser les shader pour le texte
-    text_shader = render_shader_create("./shaders/text.vert", "./shaders/text.frag");
+    shader_text = render_shader_create("./shaders/text.vert", "./shaders/text.frag");
 
-    glGenVertexArrays(1, &text_vao);
-    glGenBuffers(1, &text_vbo);
+    glGenVertexArrays(1, &vao_text);
+    glGenBuffers(1, &vao_text);
 
-    glBindVertexArray(text_vao);
-    glBindBuffer(GL_ARRAY_BUFFER, text_vbo);
+    glBindVertexArray(vao_text);
+    glBindBuffer(GL_ARRAY_BUFFER, vbo_text);
     glBufferData(GL_ARRAY_BUFFER, 0, NULL, GL_STATIC_DRAW);
 
     glVertexAttribPointer(0, 4, GL_FLOAT, GL_FALSE, 4 * sizeof(float), NULL);
@@ -106,10 +104,10 @@ void render_text_init()
     FT_Done_Face(face);
     FT_Done_FreeType(ft);
 
-    glGenVertexArrays(1, &text_vao);
-    glGenBuffers(1, &text_vbo);
-    glBindVertexArray(text_vao);
-    glBindBuffer(GL_ARRAY_BUFFER, text_vbo);
+    glGenVertexArrays(1, &vao_text);
+    glGenBuffers(1, &vbo_text);
+    glBindVertexArray(vao_text);
+    glBindBuffer(GL_ARRAY_BUFFER, vbo_text);
     glBufferData(GL_ARRAY_BUFFER, sizeof(float) * 6 * 4, NULL, GL_DYNAMIC_DRAW);
     glVertexAttribPointer(0, 4, GL_FLOAT, GL_FALSE, 4 * sizeof(float), 0);
     glEnableVertexAttribArray(0);
@@ -117,23 +115,20 @@ void render_text_init()
     glBindVertexArray(0);
 
     // Initialiser la matrice de project pour chaque shader
-    mat4x4_ortho(projection, 0, render_width, 0, render_height, -2.0f, 2.0f);
-
     mat4x4 text_projection;
     mat4x4_identity(text_projection);
     mat4x4_ortho(text_projection, 0, render_width * scale, 0, render_height * scale, -2.0f, 2.0f);
-    glUseProgram(text_shader);
-    glUniformMatrix4fv(glGetUniformLocation(text_shader, "projection"), 1, GL_FALSE, &text_projection[0][0]);
+    glUseProgram(shader_text);
+    glUniformMatrix4fv(glGetUniformLocation(shader_text, "projection"), 1, GL_FALSE, &text_projection[0][0]);
 }
 
 void render_text(const char *text, float x, float y, vec4 color, u8 is_centered)
 {
+    glUseProgram(shader_text);
 
-    glUseProgram(text_shader);
-
-    glUniform4fv(glGetUniformLocation(text_shader, "color"), 1, color);
+    glUniform4fv(glGetUniformLocation(shader_text, "color"), 1, color);
     glActiveTexture(GL_TEXTURE0);
-    glBindVertexArray(text_vao);
+    glBindVertexArray(vao_text);
 
     x *= 2;
     y *= 2;
@@ -169,7 +164,7 @@ void render_text(const char *text, float x, float y, vec4 color, u8 is_centered)
             {x2 + w, y2 + h, 1, 0}};
 
         glBindTexture(GL_TEXTURE_2D, cd.texture);
-        glBindBuffer(GL_ARRAY_BUFFER, text_vbo);
+        glBindBuffer(GL_ARRAY_BUFFER, vbo_text);
         glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof vertices, vertices);
         glBindBuffer(GL_ARRAY_BUFFER, 0);
         glDrawArrays(GL_TRIANGLES, 0, 6);

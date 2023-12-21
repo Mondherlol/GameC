@@ -44,6 +44,36 @@ SDL_Window *render_init(void)
     return window;
 }
 
+static i32 find_texture_slot(u32 texture_slots[8], u32 texture_id)
+{
+    for (i32 i = 1; i < 8; ++i)
+    {
+        if (texture_slots[i] == texture_id)
+        {
+            return i;
+        }
+    }
+    return -1;
+}
+
+static i32 try_insert_texture(u32 texture_slots[8], u32 texture_id)
+{
+    i32 index = find_texture_slot(texture_slots, texture_id);
+
+    if (index > 0)
+        return index;
+
+    for (i32 i = 1; i < 8; ++i)
+    {
+        if (texture_slots[i] == 0)
+        {
+            texture_slots[i] = texture_id;
+            return i;
+        }
+    }
+    return -1;
+}
+
 void render_begin(void)
 {
     glClearColor(0.08, 0.1, 0.1, 1); // Couleur d'effacement de l'écran en début de rendu
@@ -59,7 +89,7 @@ static void render_batch(Batch_Vertex *vertices, size_t count, u32 texture_ids[8
 
     // Texture de couleur
     glActiveTexture(GL_TEXTURE0);
-    glBindTexture(GL_TEXTURE_2D, texture_ids[1]);
+    glBindTexture(GL_TEXTURE_2D, texture_color);
 
     // Le reste des textures
     for (u32 i = 1; i < 8; ++i)
@@ -93,9 +123,7 @@ static void append_quad(vec2 position, vec2 size, vec4 texture_coordinates, vec4
                                       .position = {position[0] + size[0], position[1]},
                                       .uvs = {uvs[2], uvs[1]},
                                       .color = {color[0], color[1], color[2], color[3]},
-                                      .texture_slot = texture_slot
-
-                                  });
+                                      .texture_slot = texture_slot});
 
     array_list_append(list_batch, &(Batch_Vertex){
                                       .position = {position[0] + size[0], position[1] + size[1]},
@@ -107,16 +135,16 @@ static void append_quad(vec2 position, vec2 size, vec4 texture_coordinates, vec4
                                       .position = {position[0], position[1] + size[1]},
                                       .uvs = {uvs[0], uvs[3]},
                                       .color = {color[0], color[1], color[2], color[3]},
-                                      .texture_slot = texture_slot
-
-                                  });
+                                      .texture_slot = texture_slot});
 }
 
-void render_end(SDL_Window *window, u32 batch_texture_ids[8])
+void render_end(SDL_Window *window)
+{
+    SDL_GL_SwapWindow(window); // Mettre à jour la fenêtre avec le rendu OPENGL
+}
+void render_textures(u32 batch_texture_ids[8])
 {
     render_batch(list_batch->items, list_batch->len, batch_texture_ids);
-
-    SDL_GL_SwapWindow(window); // Mettre à jour la fenêtre avec le rendu OPENGL
 }
 
 void render_quad(vec2 pos, vec2 size, vec4 color)
@@ -140,9 +168,7 @@ void render_quad(vec2 pos, vec2 size, vec4 color)
 
     glBindVertexArray(vao_quad);
 
-    glActiveTexture(GL_TEXTURE0);
     glBindTexture(GL_TEXTURE_2D, texture_color);
-    // glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
     glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, NULL);
 
     glBindVertexArray(0);
@@ -212,8 +238,6 @@ void render_aabb(float *aabb, vec4 color)
     render_quad_line(&aabb[0], size, color);
 }
 
-static u32 next_sprite_sheet_slot = 1;
-
 void render_sprite_sheet_init(Sprite_Sheet *sprite_sheet, const char *path, float cell_width, float cell_height)
 {
     glGenTextures(1, &sprite_sheet->texture_id);
@@ -238,7 +262,6 @@ void render_sprite_sheet_init(Sprite_Sheet *sprite_sheet, const char *path, floa
     sprite_sheet->height = (float)height;
     sprite_sheet->cell_width = cell_width;
     sprite_sheet->cell_height = cell_height;
-    sprite_sheet->texture_slot = next_sprite_sheet_slot++;
 }
 
 static void calculate_sprite_texture_coordinates(vec4 result, float row, float column, float texture_width, float texture_height, float cell_width, float cell_height)
@@ -253,37 +276,7 @@ static void calculate_sprite_texture_coordinates(vec4 result, float row, float c
     result[3] = y + h;
 }
 
-static i32 find_texture_slot(u32 texture_slots[8], u32 texture_id)
-{
-    for (i32 i = 1; i < 8; ++i)
-    {
-        if (texture_slots[i] == texture_id)
-        {
-            return i;
-        }
-    }
-    return -1;
-}
-
-static i32 try_insert_texture(u32 texture_slots[8], u32 texture_id)
-{
-    i32 index = find_texture_slot(texture_slots, texture_id);
-
-    if (index > 0)
-        return index;
-
-    for (i32 i = 1; i < 8; ++i)
-    {
-        if (texture_slots[i] == 0)
-        {
-            texture_slots[i] = texture_id;
-            return i;
-        }
-    }
-    return -1;
-}
-
-void render_sprite_sheet_frame(Sprite_Sheet *sprite_sheet, float row, float column, vec2 position, bool is_flipped, vec4 color, float texture_slot)
+void render_sprite_sheet_frame(Sprite_Sheet *sprite_sheet, float row, float column, vec2 position, bool is_flipped, vec4 color, u32 texture_slots[8])
 {
     vec4 uvs;
     calculate_sprite_texture_coordinates(uvs, row, column, sprite_sheet->width, sprite_sheet->height, sprite_sheet->cell_width, sprite_sheet->cell_height);
@@ -298,7 +291,13 @@ void render_sprite_sheet_frame(Sprite_Sheet *sprite_sheet, float row, float colu
     vec2 size = {sprite_sheet->cell_width, sprite_sheet->cell_height};
     vec2 bottom_left = {position[0] - size[0] * 0.5, position[1] - size[1] * 0.5};
 
-    append_quad(bottom_left, size, uvs, color, texture_slot);
+    i32 texture_slot = try_insert_texture(texture_slots, sprite_sheet->texture_id);
+
+    if (texture_slot == -1)
+    {
+        // Faut flush le buffer
+    }
+    append_quad(bottom_left, size, uvs, color, (float)texture_slot);
 }
 
 float render_get_scale()
