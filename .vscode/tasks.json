@@ -1,0 +1,16 @@
+{
+    "version": "2.0.0",
+    "tasks": [
+      {
+        "label": "build mygame",
+        "type": "shell",
+        "command": "cl",
+        "args": ["/Zi", "/I", "../include", "src\\*.c", "/link", "../lib/SDL2main.lib", "../lib/SDL2.lib", "../lib/libcurl.a", "../lib/libcurl.dll.a", "../lib/freetype.lib", "../lib/SDL2_mixer.lib", "/OUT:mygame.exe"],
+        "group": {
+          "kind": "build",
+          "isDefault": true
+        }
+      }
+    ]
+  }
+  
