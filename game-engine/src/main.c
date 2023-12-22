@@ -214,7 +214,7 @@ void spawn_enemy(bool is_small, bool is_enraged, bool is_flipped)
         size[0] = 12;
         size[1] = 12;
         sprite_offset[0] = 0;
-        sprite_offset[1] = 14;
+        sprite_offset[1] = 15; // Vertical
         animation_id = anim_ennemy_small_run_id;
         on_hit_static = enemy_small_on_hit_static;
         speed = SPEED_ENEMY_SMALL;
@@ -284,7 +284,7 @@ int main(int argc, char *argv[])
     SDL_Window *window = render_init();
 
     config_init();
-    // controller_init();
+    controller_init();
     physics_init();
     entity_init();
     animation_init();

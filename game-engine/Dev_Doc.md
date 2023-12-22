@@ -50,3 +50,7 @@ Pour une image plus détaillée et comprendre l'intérêt voir ici : http://sdz.
 
 ## Comprendre les collisions entre AABB :
 https://noonat.github.io/intersect/
+
+
+## Affichage de texte, comprendre les glyph
+https://learnopengl.com/In-Practice/Text-Rendering
