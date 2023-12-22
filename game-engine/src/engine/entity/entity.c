@@ -48,7 +48,7 @@ size_t entity_create(vec2 position, vec2 size, vec2 sprite_offset, vec2 velocity
             id),
         .sprite_offset = {sprite_offset[0], sprite_offset[1]},
         .speed = speed,
-        .health = health
+        .health = health,
 
     };
 
@@ -99,6 +99,7 @@ Entity *entity_by_body_id(size_t body_id)
 bool entity_damage(size_t entity_id, u8 amount)
 {
     Entity *entity = entity_get(entity_id);
+
     if (amount >= entity->health)
     {
         entity_destroy(entity_id);

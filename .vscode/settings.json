@@ -64,7 +64,8 @@
     "ft2build.h": "c",
     "types.h": "c",
     "render.h": "c",
-    "my_curl.h": "c"
+    "my_curl.h": "c",
+    "audio.h": "c"
   },
   "C_Cpp.errorSquiggles": "disabled"
 }

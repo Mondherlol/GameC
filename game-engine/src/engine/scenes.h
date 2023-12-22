@@ -10,4 +10,4 @@ void score_init();
 void display_menu(SDL_Window *window);
 void display_score(SDL_Window *window);
 void display_game_over(SDL_Window *window);
-void show_game_over(u32 score, u8 ennemy);
+void show_game_over(int score, u8 ennemy);

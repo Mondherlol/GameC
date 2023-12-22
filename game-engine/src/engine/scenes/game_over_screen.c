@@ -19,13 +19,15 @@ Image gameOverImages[GAME_OVER_MENU_ITEMS_COUNT];
 Image gameOverNewScoreImages[GAME_OVER_MENU_ITEMS_COUNT];
 Image ennemiesImages[ENNEMY_COUNT];
 int currentButtonSelection = 0;
+int highScore = 3;
 
 u8 game_over_texture_slots[8] = {0};
 MyCurlHandle curl_handler;
-
 bool isNewHighScore = false;
 u8 ennemyKiller = 0;
 char playerKiller[] = "Mondher";
+static char scoreText[20];
+static char highScoreText[20];
 
 void game_over_init()
 {
@@ -47,9 +49,19 @@ void game_over_init()
     init_image(&ennemiesImages[4], "assets/spritesheets/fire_solo.png");
 }
 
-void show_game_over(u32 score, u8 ennemy)
+void show_game_over(int score, u8 ennemy)
 {
-    isNewHighScore = score > 50;
+    // highScore = 3; // Initialisation bidon, à remplacer avec vrai highscore
+    isNewHighScore = false;
+
+    printf("Score = %d", score);
+    sprintf(scoreText, "%d", score);
+    if (score > highScore)
+    {
+        isNewHighScore = true;
+        highScore = score;
+    }
+    sprintf(highScoreText, "%d", highScore);
     ennemyKiller = ennemy;
     currentButtonSelection = 0;
     global.current_screen = GAME_OVER_SCREEN;
@@ -170,10 +182,10 @@ void display_game_over(SDL_Window *window)
     render_text("Suicide", 540, 77, RED, 1);
 
     // Score actuel
-    render_text("150", width / 2, height * 0.60, WHITE, 1);
+    render_text(scoreText, width / 2, height * 0.60, WHITE, 1);
 
     // Meilleur score
-    render_text("350", 50, height * 0.36, YELLOW, 1);
+    render_text(highScoreText, 50, height * 0.36, YELLOW, 1);
     render_text(playerKiller, 75, height * 0.31, WHITE, 1);
 
     render_end(window);
