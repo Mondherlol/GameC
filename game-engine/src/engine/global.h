@@ -11,7 +11,8 @@ typedef enum screens
 {
     GAME_SCREEN = 0,
     MENU_SCREEN = 1,
-    SCORE_SCREEN = 2
+    SCORE_SCREEN = 2,
+    GAME_OVER_SCREEN = 3
 } Screens;
 
 typedef struct global

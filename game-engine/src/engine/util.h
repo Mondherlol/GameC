@@ -19,6 +19,8 @@
     (vec4) { 1, 1, 1, 1 }
 #define BLACK \
     (vec4) { 0, 0, 0, 1 }
+#define GRAY \
+    (vec4) { 0.5, 0.5, 0.5, 1 }
 #define RED \
     (vec4) { 1, 0, 0, 1 }
 #define GREEN \

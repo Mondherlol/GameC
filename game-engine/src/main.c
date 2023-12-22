@@ -244,13 +244,15 @@ void spawn_enemy(Enemy_Type enemy_type, bool is_enraged, bool is_flipped)
 void fire_on_hit(Body *self, Body *other, Hit hit)
 {
     // Faire que le jeu s'arrête je pense ?
+    show_game_over(100, rand() % 5);
     if (other->collision_layer == COLLISION_LAYER_ENEMY)
     {
-        if (other->is_active)
-        {
-            Entity *enemy = entity_get(other->entity_id);
-            entity_destroy(other->entity_id);
-        }
+        // if (other->is_active)
+        // {
+        //     Entity *enemy = entity_get(other->entity_id);
+        //     entity_destroy(other->entity_id);
+        // }
+        reset();
     }
     else if (other->collision_layer == COLLISION_LAYER_PLAYER)
     {
@@ -373,16 +375,20 @@ int main(int argc, char *argv[])
     while (!global.should_quit)
     {
         time_update();
-        if (global.current_screen == MENU_SCREEN)
+        switch (global.current_screen)
         {
+        case MENU_SCREEN:
             display_menu(window);
-        }
-        else if (global.current_screen == SCORE_SCREEN)
-        {
+            break;
+        case SCORE_SCREEN:
             display_score(window);
-        }
-        else
+            break;
+        case GAME_OVER_SCREEN:
+            display_game_over(window);
+            break;
+        case GAME_SCREEN:
         {
+
             SDL_Event event;
 
             while (SDL_PollEvent(&event))
@@ -530,6 +536,11 @@ int main(int argc, char *argv[])
             render_text("joueur", body_player->aabb.position[0] - 5, body_player->aabb.position[1] + 20, WHITE, 1);
 
             render_end(window);
+            break;
+        }
+        default:
+            ERROR_EXIT("ECRAN INEXISTANT");
+            break;
         }
 
         time_update_late();
