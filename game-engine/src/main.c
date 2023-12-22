@@ -28,15 +28,32 @@ static Mix_Chunk *SOUND_JUMP;
 static Sprite_Sheet sprite_sheet_player;
 static Sprite_Sheet sprite_sheet_map;
 static Sprite_Sheet sprite_sheet_enemy_small;
+static Sprite_Sheet sprite_sheet_enemy_medium;
 static Sprite_Sheet sprite_sheet_enemy_large;
+static Sprite_Sheet sprite_sheet_enemy_flying;
 
+static Sprite_Sheet sprite_sheet_fire;
+
+static const float HEALTH_PLAYER = 0;
 static const float SPEED_PLAYER = 250;
 static const float JUMP_VELOCITY = 1350;
 static const float GROUNDED_TIME = 0.1f; // Temps passé au sol
 static const float SPEED_ENEMY_LARGE = 80;
+static const float SPEED_ENEMY_MEDIUM = 90;
 static const float SPEED_ENEMY_SMALL = 100;
+static const float SPEED_ENEMY_FLYING = 120;
 static const float HEALTH_ENEMY_LARGE = 7;
 static const float HEALTH_ENEMY_SMALL = 3;
+static const float HEALTH_ENEMY_FLYING = 5;
+static const float HEALTH_ENEMY_MEDIUM = 5;
+
+typedef enum
+{
+    ENEMY_TYPE_SMALL,
+    ENEMY_TYPE_MEDIUM,
+    ENEMY_TYPE_LARGE,
+    ENEMY_TYPE_FLYING,
+} Enemy_Type;
 
 typedef enum collision_layer
 {
@@ -57,9 +74,11 @@ static size_t player_id;
 static size_t anim_player_walk_id;
 static size_t anim_player_idle_id;
 static size_t anim_ennemy_small_run_id;
+static size_t anim_ennemy_medium_run_id;
 static size_t anim_ennemy_large_run_id;
-static size_t anim_enemy_small_enraged_id;
-static size_t anim_enemy_large_enraged_id;
+static size_t anim_ennemy_flying_fly_id;
+
+static size_t anim_fire_id;
 
 // Var d'états
 bool player_is_grounded = false;
@@ -120,8 +139,7 @@ void player_on_hit_static(Body *self, Static_Body *other, Hit hit)
     }
 }
 
-/**/
-void enemy_small_on_hit_static(Body *self, Static_Body *other, Hit hit)
+void enemy_on_hit_static(Body *self, Static_Body *other, Hit hit)
 {
     Entity *entity = entity_get(self->entity_id);
 
@@ -129,11 +147,11 @@ void enemy_small_on_hit_static(Body *self, Static_Body *other, Hit hit)
     {
         if (entity->is_enraged)
         {
-            self->velocity[0] = SPEED_ENEMY_SMALL * 1.5f;
+            self->velocity[0] = entity->speed * 1.5f;
         }
         else
         {
-            self->velocity[0] = SPEED_ENEMY_SMALL;
+            self->velocity[0] = entity->speed;
         }
     }
 
@@ -141,95 +159,103 @@ void enemy_small_on_hit_static(Body *self, Static_Body *other, Hit hit)
     {
         if (entity->is_enraged)
         {
-            self->velocity[0] = -SPEED_ENEMY_SMALL * 1.5f;
+            self->velocity[0] = -entity->speed * 1.5f;
         }
         else
         {
-            self->velocity[0] = -SPEED_ENEMY_SMALL;
-        }
-    }
-}
-/**/
-void enemy_large_on_hit_static(Body *self, Static_Body *other, Hit hit)
-{
-    Entity *entity = entity_get(self->entity_id);
-
-    if (hit.normal[0] > 0)
-    {
-        if (entity->is_enraged)
-        {
-            self->velocity[0] = SPEED_ENEMY_LARGE * 1.5f;
-        }
-        else
-        {
-            self->velocity[0] = SPEED_ENEMY_LARGE;
-        }
-    }
-
-    if (hit.normal[0] < 0)
-    {
-        if (entity->is_enraged)
-        {
-            self->velocity[0] = -SPEED_ENEMY_LARGE * 1.5f;
-        }
-        else
-        {
-            self->velocity[0] = -SPEED_ENEMY_LARGE;
+            self->velocity[0] = -entity->speed;
         }
     }
 }
 
-/*Pour la flamme dans laquelle tombe l'ennemi*/
-void fire_on_hit(Body *self, Body *other, Hit hit)
-{
-    if (other->collision_layer == COLLISION_LAYER_ENEMY)
-    {
-        for (size_t i = 0; i < entity_count(); i++)
-        {
-            Entity *entity = entity_get(i);
-
-            if (entity->body_id == hit.other_id)
-            {
-                Body *body = physics_body_get(entity->body_id);
-                body->is_active = false;
-                entity->is_active = false;
-                break;
-            }
-        }
-    }
-}
-
-void spawn_enemy(bool is_small, bool is_enraged, bool is_flipped)
+void spawn_enemy(Enemy_Type enemy_type, bool is_enraged, bool is_flipped)
 {
     float spawn_x = is_flipped ? render_width : 0;
     vec2 position = {spawn_x, (render_height - 64)};
-    float speed = SPEED_ENEMY_LARGE;
-    vec2 size = {20, 20};
-    vec2 sprite_offset = {0, 5};
-    size_t animation_id = anim_ennemy_large_run_id;
-    On_Hit_Static on_hit_static = enemy_large_on_hit_static;
+    float speed, health;
+    vec2 size, sprite_offset;
+    size_t animation_id;
+    On_Hit_Static on_hit_static;
 
-    if (is_small)
+    switch (enemy_type)
     {
+    case ENEMY_TYPE_SMALL:
         size[0] = 12;
-        size[1] = 12;
+        size[1] = 25;
         sprite_offset[0] = 0;
-        sprite_offset[1] = 15; // Vertical
-        animation_id = anim_ennemy_small_run_id;
-        on_hit_static = enemy_small_on_hit_static;
+        sprite_offset[1] = 3; // Vertical
         speed = SPEED_ENEMY_SMALL;
+        health = HEALTH_ENEMY_SMALL;
+        animation_id = anim_ennemy_small_run_id;
+        on_hit_static = enemy_on_hit_static;
+        break;
+
+    case ENEMY_TYPE_MEDIUM:
+        // Ajoutez ici les paramètres pour le type d'ennemi moyen (bunny)
+        size[0] = 23;
+        size[1] = 32;
+        sprite_offset[0] = 0;       // Ajustez cela en conséquence
+        sprite_offset[1] = 5;       // Ajustez cela en conséquence
+        speed = SPEED_ENEMY_MEDIUM; // Ajoutez cela dans les constantes
+        health = HEALTH_ENEMY_MEDIUM;
+        animation_id = anim_ennemy_medium_run_id; // Ajoutez cela dans les constantes
+        on_hit_static = enemy_on_hit_static;      // Ajoutez cela dans les fonctions de gestion des collisions
+        break;
+
+    case ENEMY_TYPE_LARGE:
+        size[0] = 52;
+        size[1] = 30;
+        sprite_offset[0] = 0; // Ajustez cela en conséquence
+        sprite_offset[1] = 1; // Ajustez cela en conséquence
+        speed = SPEED_ENEMY_LARGE;
+        health = HEALTH_ENEMY_LARGE;
+        animation_id = anim_ennemy_large_run_id;
+        on_hit_static = enemy_on_hit_static;
+        break;
+
+    case ENEMY_TYPE_FLYING:
+        size[0] = 35;
+        size[1] = 30;
+        sprite_offset[0] = 0; // Ajustez cela en conséquence
+        sprite_offset[1] = 0; // Ajustez cela en conséquence
+        speed = SPEED_ENEMY_FLYING;
+        health = HEALTH_ENEMY_FLYING;
+        animation_id = anim_ennemy_flying_fly_id;
+        on_hit_static = enemy_on_hit_static;
+        break;
+
+    default:
+        ERROR_EXIT("ERREUR SPANW ENNEMY= ", "Type d'ennemi non connu.");
+        return;
     }
 
     if (is_enraged)
     {
         speed *= 1.5;
-        // animation_id = is_small ? anim_enemy_small_enraged_id : anim_enemy_large_enraged_id;
     }
 
     vec2 velocity = {is_flipped ? -speed : speed, 0};
-    size_t id = entity_create(position, size, sprite_offset, velocity, COLLISION_LAYER_ENEMY, enemy_mask, false, animation_id, NULL, on_hit_static);
+    size_t id = entity_create(position, size, sprite_offset, velocity, COLLISION_LAYER_ENEMY, enemy_mask, false, animation_id, NULL, on_hit_static, health, speed);
     Entity *entity = entity_get(id);
     entity->is_enraged = is_enraged;
+}
+
+/*Pour la flamme dans laquelle tombe l'ennemi*/
+void fire_on_hit(Body *self, Body *other, Hit hit)
+{
+    // Faire que le jeu s'arrête je pense ?
+    if (other->collision_layer == COLLISION_LAYER_ENEMY)
+    {
+        if (other->is_active)
+        {
+            Entity *enemy = entity_get(other->entity_id);
+            entity_destroy(other->entity_id);
+        }
+    }
+    else if (other->collision_layer == COLLISION_LAYER_PLAYER)
+    {
+        reset();
+    }
 }
 
 void reset(void)
@@ -253,8 +279,11 @@ void reset(void)
                               player_mask,
                               false, // is_kinematic flag
                               (size_t)-1,
-                              player_on_hit,       // on hit
-                              player_on_hit_static // on hit static
+                              player_on_hit,        // on hit
+                              player_on_hit_static, // on hit static
+                              HEALTH_PLAYER,
+                              SPEED_PLAYER
+
     );
     // Initialiser terrain du  niveau
     {
@@ -271,10 +300,12 @@ void reset(void)
         physics_static_body_create((vec2){16, height - 64}, (vec2){32, 64}, COLLISION_LAYER_ENEMY_PASSTHROUGH);         // Spawn ennemis de gauche
         physics_static_body_create((vec2){width - 16, height - 64}, (vec2){32, 64}, COLLISION_LAYER_ENEMY_PASSTHROUGH); // Spawn ennemis de droite
 
-        // Reste à creer le feu.
+        // Trigger de disparation des ennemis (feu)
+        physics_trigger_create((vec2){render_width * 0.5, -4}, (vec2){64, 8}, 0, fire_mask, fire_on_hit);
     }
-    // Entity *player = entity_get(0);
-    // player->animation_id = anim_player_idle_id;
+    entity_create((vec2){render_width * 0.5, 0}, (vec2){32, 64}, (vec2){0, 0}, (vec2){0, 0}, 0, 0, true, anim_fire_id, NULL, NULL, 0, 0);
+    entity_create((vec2){render_width * 0.5 + 16, -16}, (vec2){32, 64}, (vec2){0, 0}, (vec2){0, 0}, 0, 0, true, anim_fire_id, NULL, NULL, 0, 0);
+    entity_create((vec2){render_width * 0.5 - 16, -16}, (vec2){32, 64}, (vec2){0, 0}, (vec2){0, 0}, 0, 0, true, anim_fire_id, NULL, NULL, 0, 0);
 }
 
 int main(int argc, char *argv[])
@@ -284,7 +315,7 @@ int main(int argc, char *argv[])
     SDL_Window *window = render_init();
 
     config_init();
-    controller_init();
+    // controller_init();
     physics_init();
     entity_init();
     animation_init();
@@ -309,8 +340,11 @@ int main(int argc, char *argv[])
     {
         render_sprite_sheet_init(&sprite_sheet_player, "assets/spritesheets/player.png", 24, 24);
         render_sprite_sheet_init(&sprite_sheet_map, "assets/spritesheets/level_1_map.png", 640, 360);
-        render_sprite_sheet_init(&sprite_sheet_enemy_small, "assets/spritesheets/bunny_run(34x44).png", 34, 44);
+        render_sprite_sheet_init(&sprite_sheet_enemy_small, "assets/spritesheets/chicken_run(32x34).png", 32, 34);
+        render_sprite_sheet_init(&sprite_sheet_enemy_medium, "assets/spritesheets/bunny_run(34x44).png", 34, 44);
         render_sprite_sheet_init(&sprite_sheet_enemy_large, "assets/spritesheets/rhino_run(52x34).png", 52, 34);
+        render_sprite_sheet_init(&sprite_sheet_enemy_flying, "assets/spritesheets/bat_flying(46x30).png", 46, 30);
+        render_sprite_sheet_init(&sprite_sheet_fire, "assets/spritesheets/fire.png", 32, 64);
     }
 
     // Initialiser animations
@@ -318,16 +352,20 @@ int main(int argc, char *argv[])
 
         size_t adef_player_walk_id = animation_definition_create(&sprite_sheet_player, 0.1, 0, (u8[]){1, 2, 3, 4, 5, 6, 7}, 7);
         size_t adef_player_idle_id = animation_definition_create(&sprite_sheet_player, 0, 0, (u8[]){0}, 1);
+        size_t adef_ennemy_small_run_id = animation_definition_create(&sprite_sheet_enemy_small, 0.1, 0, (u8[]){0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13}, 14);
+        size_t adef_ennemy_medium_run_id = animation_definition_create(&sprite_sheet_enemy_medium, 0.1, 0, (u8[]){0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11}, 12);
+        size_t adef_ennemy_large_run_id = animation_definition_create(&sprite_sheet_enemy_large, 0.1, 0, (u8[]){0, 1, 2, 3, 4, 5}, 6);
+        size_t adef_ennemy_flying_fly_id = animation_definition_create(&sprite_sheet_enemy_flying, 0.1, 0, (u8[]){0, 1, 2, 3, 4, 5, 6}, 7);
+        size_t adef_fire_id = animation_definition_create(&sprite_sheet_fire, 0.1, 0, (u8[]){0, 1, 2, 3, 4, 5, 6}, 7);
 
         anim_player_walk_id = animation_create(adef_player_walk_id, true);
         anim_player_idle_id = animation_create(adef_player_idle_id, false);
-
-        // Ennemis
-        size_t adef_ennemy_small_run_id = animation_definition_create(&sprite_sheet_enemy_small, 0.1, 0, (u8[]){0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11}, 12);
-        size_t adef_ennemy_large_run_id = animation_definition_create(&sprite_sheet_enemy_large, 0.1, 0, (u8[]){0, 1, 2, 3, 4, 5}, 6);
-
         anim_ennemy_small_run_id = animation_create(adef_ennemy_small_run_id, true);
+        anim_ennemy_medium_run_id = animation_create(adef_ennemy_medium_run_id, true);
         anim_ennemy_large_run_id = animation_create(adef_ennemy_large_run_id, true);
+        anim_ennemy_flying_fly_id = animation_create(adef_ennemy_flying_fly_id, true);
+
+        anim_fire_id = animation_create(adef_fire_id, true);
     }
 
     reset();
@@ -398,19 +436,40 @@ int main(int argc, char *argv[])
 
             animation_update(global.time.delta);
 
-            // Spawn enemies.
+            // Spawn enemies
             {
                 if (spawn_timer <= 0)
                 {
                     spawn_timer = (float)((rand() % 200) + 200) / 100.f;
-
-                    spawn_timer *= 0.2;
+                    // spawn_timer *= 0.2;
 
                     bool is_flipped = rand() % 100 >= 50;
-                    bool is_small = rand() % 100 > 18;
 
-                    float spawn_x = is_flipped ? 540 : 100;
-                    spawn_enemy(is_small, false, is_flipped);
+                    // Utilisation de la nouvelle fonction spawn_enemy avec des probabilités égales
+                    int random_value = rand() % 4;
+
+                    switch (random_value)
+                    {
+                    case 0:
+                        spawn_enemy(ENEMY_TYPE_SMALL, false, is_flipped);
+                        break;
+
+                    case 1:
+                        spawn_enemy(ENEMY_TYPE_MEDIUM, false, is_flipped);
+                        break;
+
+                    case 2:
+                        spawn_enemy(ENEMY_TYPE_LARGE, false, is_flipped);
+                        break;
+
+                    case 3:
+                        spawn_enemy(ENEMY_TYPE_FLYING, false, is_flipped);
+                        break;
+
+                    default:
+                        ERROR_EXIT("Type d'ennemi non défini.");
+                        break;
+                    }
                 }
             }
 
@@ -439,7 +498,7 @@ int main(int argc, char *argv[])
             // #endif
 
             // Rendre le terrain
-            render_sprite_sheet_frame(&sprite_sheet_map, 0, 0, (vec2){render_width / 2.0, render_height / 2.0}, false, (vec4){1, 1, 1, 1}, texture_slots);
+            render_sprite_sheet_frame(&sprite_sheet_map, 0, 0, (vec2){render_width / 2.0, render_height / 2.0}, false, (vec4){1, 1, 1, DEBUG ? 0.2 : 1}, texture_slots);
 
             // Gerer l'animation des entity
             for (size_t i = 0; i < entity_count(); ++i)

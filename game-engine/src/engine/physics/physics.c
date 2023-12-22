@@ -450,3 +450,8 @@ void physics_body_destroy(size_t body_id)
     Body *body = physics_body_get(body_id);
     body->is_active = false;
 }
+
+size_t physics_trigger_create(vec2 position, vec2 size, u8 collision_layer, u8 collision_mask, On_Hit on_hit)
+{
+    return physics_body_create(position, size, (vec2){0, 0}, collision_layer, collision_mask, true, on_hit, NULL, (size_t)-1);
+}

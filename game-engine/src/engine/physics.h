@@ -66,6 +66,8 @@ Body *physics_body_get(size_t index);                                           
 size_t physics_static_body_create(vec2 position, vec2 size, u8 collision_layer); // Crée un body static et renvoie son index
 Static_Body *physics_static_body_get(size_t index);                              // Récupére un static body à un index donné
 
+size_t physics_trigger_create(vec2 position, vec2 size, u8 collision_layer, u8 collision_mask, On_Hit on_hit);
+
 bool physics_point_intersect_aabb(vec2 point, AABB aabb); // Collision entre un point et une boite
 bool physics_aabb_intersect_aabb(AABB a, AABB b);         // Collision entre deux boites
 AABB aabb_minkowski_difference(AABB a, AABB b);
