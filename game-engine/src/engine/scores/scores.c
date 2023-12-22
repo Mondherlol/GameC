@@ -2,121 +2,108 @@
 #include <stdlib.h>
 #include <stdbool.h>
 #include <string.h>
-#include "../io.h" 
+#include "../io.h"
+#include "../scores.h"
 
-#define SCORE_FILE_PATH "./scores.txt"
+#define SCORE_FILE_PATH "C:/Users/PC/Desktop/projetgameC/GameC/game-engine/src/engine/scores/scores.txt"
 
-const static char *SCORE_DEFAULT =
-    "sarra:100\n"
-    "mondher:0\n"
-    "\n";
-;
+const static char *SCORE_DEFAULT = "sarra:100\nmondher:0\n";
 
-//pour charger le fichier score
-// static int Score_load(void)
-// {
-//     File file_score = io_file_read("./scores.txt");
-//     if (!file_score.is_valid)
-//         return 1;
+// Fonction pour charger le fichier de scores
+bool Score_load(void)
+{
+    File file_score = io_file_read(SCORE_FILE_PATH);
+    if (!file_score.is_valid)
+        return false;
 
-//     printf("fichier : %s", file_score.data);
+    printf("Fichier des scores :\n%s", file_score.data);
 
-//     free(file_score.data);
+    free(file_score.data);
 
-//     return 0;
-// }
+    return true;
+}
 
+// Fonction d'initialisation des scores
+void Score_init(void)
+{
+     if (Score_load())
+    {
+        printf("Scores déjà initialisés.\n");
+        return ;
+    }
 
-// void score_init(void)
-// {
-//     if (Score_load() == 0)
-//         return;
+    io_file_append((void *)SCORE_DEFAULT, strlen(SCORE_DEFAULT), SCORE_FILE_PATH);
 
-//     io_file_append((void *)SCORE_DEFAULT, strlen(SCORE_DEFAULT), "./scores.txt");
+     if (Score_load())
+    {
+        printf("Initialisation des scores réussie.\n");
+    }
+    else
+    {
+        fprintf(stderr, "Impossible de charger ou créer scores.txt.\n");
+    }
+}
 
-//     if (Score_load() != 0)
-//         ERROR_EXIT("Impossible de charger ou creer scores.txt.\n");
-// }
+// Crée un fichier dans le dossier du jeu avec tous les scores locaux
+void WriteLocalScore(const char *nom, int score)
+{
+    FILE *fp = fopen(SCORE_FILE_PATH, "a");
+    if (!fp)
+    {
+        fprintf(stderr, "Erreur lors de l'ouverture du fichier des scores : %s.\n", SCORE_FILE_PATH);
+        return;
+    }
 
-// Fonction pour ajouter un nouveau score au fichier des scores
-// void WriteLocalScore(const char *nom, int score)
-// {
-//     print("writing local score")
-//     FILE *fp = fopen(SCORE_FILE_PATH, "a");
-//     if (!fp || ferror(fp))
-//     {
-//         fprintf(stderr, "Erreur lors de l'ouverture du fichier des scores en écriture.\n");
-//         return;
-//     }
+    fprintf(fp, "%s,%d\n", nom, score);
 
-//     // Écrire le nouveau score dans le fichier
-//     fprintf(fp, "%s %d\n", nom, score);
-    
-//     fclose(fp);
-// }
+    fclose(fp);
+}
 
 // Fonction pour obtenir les scores locaux depuis le fichier
-// Score* GetLocalScore()
-// {
-//     // Lire le fichier des scores
-//     File file = io_file_read(SCORE_FILE_PATH);
+Score *GetLocalScores(size_t *count)
+{
+    // Read the scores file
+    File file = io_file_read(SCORE_FILE_PATH);
 
-//     if (!file.is_valid)
-//     {
-//         // Si le fichier n'existe pas, créez-le et réessayez la lecture
-//         FILE *createFile = fopen(SCORE_FILE_PATH, "w");
-//         if (!createFile || ferror(createFile))
-//         {
+    if (!file.is_valid)
+    {
+        fprintf(stderr, "Erreur lors de la lecture du fichier des scores : %s.\n", SCORE_FILE_PATH);
+        return NULL;
+    }
 
+    char *token;
+    char *delimiters = " \n";
+    char *saveptr;
 
+    // Count the number of scores to allocate memory
+    char *temp_data = file.data;
+    while ((token = strtok(temp_data, delimiters)) != NULL)
+    {
+        (*count)++;
+        temp_data = NULL;
+    }
 
+    // Allocate memory for the scores array
+    Score *scores = (Score *)malloc((*count) * sizeof(Score));
 
+    // Fill the scores array
+    temp_data = file.data;
+    for (size_t i = 0; i < (*count); i++)
+    {
+        strncpy(scores[i].nom, strtok(temp_data, delimiters), sizeof(scores[i].nom) - 1);
+        temp_data = NULL;
+        scores[i].score = atoi(strtok(temp_data, delimiters));
+        temp_data = NULL;
+    }
 
+    // Free the memory of the read file
+    free(file.data);
 
+    // Display the scores in the console
+    for (size_t i = 0; i < (*count); i++)
+    {
+        printf("Nom: %s, Score: %d\n", scores[i].nom, scores[i].score);
+    }
 
-    
-//             fprintf(stderr, "Erreur lors de la création du fichier des scores.\n");
-//             return NULL;
-//         }
-//         fclose(createFile);
-
-//         // Réessayez la lecture après avoir créé le fichier
-//         file = io_file_read(SCORE_FILE_PATH);
-//         if (!file.is_valid)
-//         {
-//             fprintf(stderr, "Erreur lors de la lecture du fichier des scores après création.\n");
-//             return NULL;
-//         }
-//     }
-
-//     char *token;
-//     char *delimiters = " \n";
-//     char *saveptr;
-//     int num_scores = 0;
-
-//     // Compter le nombre de scores pour allouer la mémoire
-//     char *temp_data = file.data;
-//     while ((token = strtok_r(temp_data, delimiters, &saveptr)) != NULL)
-//     {
-//         num_scores++;
-//         temp_data = NULL;
-//     }
-
-//     // Allouer la mémoire pour le tableau de scores
-//     Score *scores = (Score *)malloc(num_scores * sizeof(Score));
-
-//     // Remplir le tableau de scores
-//     temp_data = file.data;
-//     for (int i = 0; i < num_scores; i++)
-//     {
-//         scores[i].nom = strdup(strtok_r(temp_data, delimiters, &saveptr));
-//         temp_data = NULL;
-//         scores[i].score = atoi(strtok_r(temp_data, delimiters, &saveptr));
-//         temp_data = NULL;
-//     }
-
-//     // Libérer la mémoire du fichier lu
-//     free(file.data);
-
-//     return scores;
-// }
+    return scores;
+}

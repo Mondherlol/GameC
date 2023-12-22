@@ -2,9 +2,9 @@
 #include <stdbool.h>
 #include <stdlib.h>
 #include <glad/glad.h>
-
 #define SDL_MAIN_HANDLED
 #include <SDL2/SDL.h>
+
 #include "engine/util.h"
 #include "engine/global.h"
 #include "engine/config.h"
@@ -17,6 +17,8 @@
 #include "engine/my_curl.h"
 #include "engine/scenes.h"
 #include "engine/audio.h"
+
+void reset(void);
 
 #define DEBUG 1
 
@@ -39,7 +41,6 @@ typedef enum collision_layer
     COLLISION_LAYER_PLAYER = 1,
     COLLISION_LAYER_ENEMY = 1 << 1,
     COLLISION_LAYER_TERRAIN = 1 << 2,
-
 } Collision_Layer;
 
 static const u8 enemy_mask = COLLISION_LAYER_PLAYER | COLLISION_LAYER_TERRAIN;
@@ -47,31 +48,29 @@ static const u8 player_mask = COLLISION_LAYER_ENEMY | COLLISION_LAYER_TERRAIN;
 static const u8 fire_mask = COLLISION_LAYER_ENEMY | COLLISION_LAYER_PLAYER;
 
 static SDL_Window *window;
-// static i32 window_width, window_height;
-// static float render_width, render_height;
 static size_t anim_player_walk_id;
 static size_t anim_player_idle_id;
 
 // States
-vec4 player_color = {0, 1, 1, 1};
 bool player_is_grounded = false;
 static vec2 pos;
 static float spawn_timer = 0;
 static float ground_timer = 0;
 
-void reset(void);
+// Debugage
+static u32 texture_slots[8] = {0};
+static size_t player_id;
 
-static void input_handle(Entity *player)
+static void input_handle(Body *body_player)
 {
     if (global.input.escape || global.input.start_controller)
         global.should_quit = true;
 
-    Body *body = physics_body_get(player->body_id);
     Animation *walk_anim = animation_get(anim_player_walk_id);
     Animation *idle_anim = animation_get(anim_player_idle_id);
 
     float velx = 0;
-    float vely = body->velocity[1];
+    float vely = body_player->velocity[1];
 
     if (global.input.right || global.input.right_controller || global.input.joystick_right_controller)
     {
@@ -87,23 +86,22 @@ static void input_handle(Entity *player)
         idle_anim->is_flipped = true;
     }
 
-    if ((global.input.up || global.input.jump_controller) && ground_timer >= 0)
+    if ((global.input.up || global.input.jump_controller) && player_is_grounded)
     {
-        ground_timer = -1;
+        player_is_grounded = false;
         vely = JUMP_VELOCITY;
         audio_sound_play(SOUND_JUMP);
     }
 
-    body->velocity[0] = velx;
-    body->velocity[1] = vely;
+    body_player->velocity[0] = velx;
+    body_player->velocity[1] = vely;
 }
 
 void player_on_hit(Body *self, Body *other, Hit hit)
 {
     if (other->collision_layer == COLLISION_LAYER_ENEMY)
     {
-        player_color[0] = 1;
-        player_color[2] = 0;
+        // Faire quelque chose si le joueur touche l'ennemi
     }
 }
 
@@ -111,7 +109,7 @@ void player_on_hit_static(Body *self, Static_Body *other, Hit hit)
 {
     if (hit.normal[1] > 0)
     {
-        ground_timer = GROUNDED_TIME;
+        player_is_grounded = true;
     }
 }
 
@@ -142,7 +140,7 @@ void enemy_large_on_hit_static(Body *self, Static_Body *other, Hit hit)
     }
 }
 
-/*Pour les flammes dans lesquelles tombent les ennemis*/
+/*Pour la flamme dans laquelle tombe l'ennemi*/
 void fire_on_hit(Body *self, Body *other, Hit hit)
 {
     if (other->collision_layer == COLLISION_LAYER_ENEMY)
@@ -179,24 +177,27 @@ void reset(void)
 {
     audio_music_play(MUSIC_STAGE_1);
 
-    entity_reset();
     physics_reset();
+    entity_reset();
+
+    ground_timer = 0;
+    spawn_timer = 0;
 
     float width = global.window_width / render_get_scale();
     float height = global.window_height / render_get_scale();
 
-    entity_create((vec2){100, 200}, // Postion (x,y)
-                  (vec2){24, 24},   // Size
-                  (vec2){0, 6},     // Offset sprite
-                  (vec2){0, 0},     // Velocité
-                  COLLISION_LAYER_PLAYER,
-                  player_mask,
-                  false, // is_kinematic flag
-                  (size_t)-1,
-                  player_on_hit,       // on hit
-                  player_on_hit_static // on hit static
+    player_id = entity_create((vec2){100, 200}, // Postion (x,y)
+                              (vec2){24, 24},   // Size
+                              (vec2){0, 6},     // Offset sprite
+                              (vec2){0, 0},     // Velocité
+                              COLLISION_LAYER_PLAYER,
+                              player_mask,
+                              false, // is_kinematic flag
+                              (size_t)-1,
+                              player_on_hit,       // on hit
+                              player_on_hit_static // on hit static
     );
-    // Initialiser terrai du  niveau
+    // Initialiser terrain du  niveau
     {
 
         physics_static_body_create((vec2){width * 0.5, height - 16}, (vec2){width, 32}, COLLISION_LAYER_TERRAIN);         // Plafond
@@ -210,15 +211,19 @@ void reset(void)
         physics_static_body_create((vec2){width * 0.5, 32 * 3 + 24}, (vec2){448, 32}, COLLISION_LAYER_TERRAIN);
         physics_static_body_create((vec2){16, height - 64}, (vec2){32, 64}, COLLISION_LAYER_TERRAIN);         // Spawn ennemis de gauche
         physics_static_body_create((vec2){width - 16, height - 64}, (vec2){32, 64}, COLLISION_LAYER_TERRAIN); // Spawn ennemis de droite
+
+        // Reste à creer le feu.
     }
-    Entity *player = entity_get(0);
-    player->animation_id = anim_player_idle_id;
+    // Entity *player = entity_get(0);
+    // player->animation_id = anim_player_idle_id;
 }
 
 int main(int argc, char *argv[])
 {
+
     time_init(60);
     SDL_Window *window = render_init();
+
     config_init();
     // controller_init();
     physics_init();
@@ -250,8 +255,9 @@ int main(int argc, char *argv[])
 
     // Initialiser animations
     {
-        size_t adef_player_walk_id = animation_definition_create(&sprite_sheet_player, (float[7]){0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1}, (u8[7]){0, 0, 0, 0, 0, 0, 0}, (u8[7]){1, 2, 3, 4, 5, 6, 7}, 7);
-        size_t adef_player_idle_id = animation_definition_create(&sprite_sheet_player, (float[1]){0}, (u8[1]){0}, (u8[1]){0}, 1);
+
+        size_t adef_player_walk_id = animation_definition_create(&sprite_sheet_player, 0.1, 0, (u8[]){1, 2, 3, 4, 5, 6, 7}, 7);
+        size_t adef_player_idle_id = animation_definition_create(&sprite_sheet_player, 0, 0, (u8[]){0}, 1);
 
         anim_player_walk_id = animation_create(adef_player_walk_id, true);
         anim_player_idle_id = animation_create(adef_player_idle_id, false);
@@ -266,14 +272,12 @@ int main(int argc, char *argv[])
         {
             display_menu(window);
         }
-        else 
-        if(global.current_screen == SCORE_SCREEN)
+        else if (global.current_screen == SCORE_SCREEN)
         {
             display_score(window);
         }
         else
         {
-
             SDL_Event event;
 
             while (SDL_PollEvent(&event))
@@ -303,7 +307,13 @@ int main(int argc, char *argv[])
                 }
             }
 
-            Entity *player = entity_get(0);
+            // Mettre a jour les timers
+            {
+                spawn_timer -= global.time.delta;
+                ground_timer -= global.time.delta;
+            }
+
+            Entity *player = entity_get(player_id);
             Body *body_player = physics_body_get(player->body_id);
 
             if (body_player->velocity[0] != 0 || (global.input.left || global.input.right))
@@ -316,25 +326,18 @@ int main(int argc, char *argv[])
             }
 
             input_update();
-            input_handle(player);
+            input_handle(body_player);
             physics_update();
 
             animation_update(global.time.delta);
 
-            // Mettre a jour les timers
-            {
-                spawn_timer -= global.time.delta;
-                ground_timer -= global.time.delta;
-            }
-
             render_begin();
 
-            render_sprite_sheet_frame(&sprite_sheet_map, 0, 0, (vec2){320, 180}, false, (vec4){1, 1, 1, 1}, 2);
-
             // #if DEBUG
-            for (size_t i = 0; i < physics_body_count(); ++i)
+            for (size_t i = 0; i < entity_count(); ++i)
             {
-                Body *body = physics_body_get(i);
+                Entity *entity = entity_get(i);
+                Body *body = physics_body_get(entity->body_id);
 
                 if (body->is_active)
                 {
@@ -352,16 +355,14 @@ int main(int argc, char *argv[])
             }
             // #endif
 
+            // Rendre le terrain
+            render_sprite_sheet_frame(&sprite_sheet_map, 0, 0, (vec2){render_width / 2.0, render_height / 2.0}, false, (vec4){1, 1, 1, 1}, texture_slots);
+
             // Gerer l'animation des entity
             for (size_t i = 0; i < entity_count(); ++i)
             {
                 Entity *entity = entity_get(i);
-                if (!entity->is_active)
-                {
-                    continue;
-                }
-
-                if (entity->animation_id == (size_t)-1)
+                if (!entity->is_active || entity->animation_id == (size_t)-1)
                 {
                     continue;
                 }
@@ -373,24 +374,20 @@ int main(int argc, char *argv[])
                 {
                     anim->is_flipped = true;
                 }
-
-                if (body->velocity[0] > 0)
+                else if (body->velocity[0] > 0)
                 {
                     anim->is_flipped = false;
                 }
 
                 vec2 pos;
                 vec2_add(pos, body->aabb.position, entity->sprite_offset);
-                animation_render(anim, pos, WHITE);
+                animation_render(anim, pos, WHITE, texture_slots);
             }
 
-            render_end(window, (u32[8]){
-                                   0,
-                                   sprite_sheet_player.texture_id,
-                                   sprite_sheet_map.texture_id,
-                               });
-            player_color[0] = 0;
-            player_color[2] = 1;
+            render_textures(texture_slots);
+            render_text("joueur", body_player->aabb.position[0] - 5, body_player->aabb.position[1] + 20, WHITE, 1);
+
+            render_end(window);
         }
 
         time_update_late();

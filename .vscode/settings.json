@@ -58,10 +58,10 @@
   "C_Cpp_Runner.msvcSecureNoWarnings": false,
   "files.associations": {
     "*.ejs": "html",
-    "global.h": "c",
-    "render_internal.h": "c",
-    "linmath.h": "c",
-    "scenes.h": "c"
-  },
-  "C_Cpp.errorSquiggles": "disabled"
+    "io.h": "c",
+    "util.h": "c",
+    "types.h": "c",
+    "errno.h": "c",
+    "stdlib.h": "c"
+  }
 }
