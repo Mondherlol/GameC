@@ -21,7 +21,7 @@ Image ennemiesImages[ENNEMY_COUNT];
 int currentButtonSelection = 0;
 int highScore = 3;
 
-u8 game_over_texture_slots[8] = {0};
+u8 game_over_texture_slots[16] = {0};
 MyCurlHandle curl_handler;
 bool isNewHighScore = false;
 u8 ennemyKiller = 0;
@@ -54,7 +54,6 @@ void show_game_over(int score, u8 ennemy)
     // highScore = 3; // Initialisation bidon, à remplacer avec vrai highscore
     isNewHighScore = false;
 
-    printf("Score = %d", score);
     sprintf(scoreText, "%d", score);
     if (score > highScore)
     {

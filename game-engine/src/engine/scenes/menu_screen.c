@@ -13,7 +13,7 @@ Image menuImages[MENU_ITEMS_COUNT];
 // Variable pour suivre la sélection actuelle dans le menu
 int currentSelection = 0;
 
-u8 texture_slots[8] = {0};
+u8 texture_slots[16] = {0};
 
 MyCurlHandle curl_handler;
 

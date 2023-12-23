@@ -83,7 +83,7 @@ void render_init_shaders(u32 *shader_default, u32 *shader_batch, float render_wi
         GL_FALSE,
         &projection[0][0]);
 
-    for (u32 i = 0; i < 8; ++i)
+    for (u32 i = 0; i < 16; ++i)
     {
         char name[] = "texture_slot_N";
         sprintf(name, "texture_slot_%u", i);

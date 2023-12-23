@@ -54,11 +54,14 @@ static const float HEALTH_ENEMY_MEDIUM = 1;
 
 typedef enum
 {
-    ENEMY_TYPE_SMALL,
-    ENEMY_TYPE_MEDIUM,
-    ENEMY_TYPE_LARGE,
-    ENEMY_TYPE_FLYING,
-} Enemy_Type;
+    ENTITY_ENEMY_TYPE_SMALL,
+    ENTITY_ENEMY_TYPE_MEDIUM,
+    ENTITY_ENEMY_TYPE_LARGE,
+    ENTITY_ENEMY_TYPE_FLYING,
+    ENTITY_FIRE,
+    ENTITY_PLAYER,
+    ENTITY_PROJECTILE
+} Entity_Type;
 
 typedef enum collision_layer
 {
@@ -120,7 +123,7 @@ static size_t anim_fire_id;
 static size_t anim_projectile_small_id;
 
 static size_t player_id;
-static u32 texture_slots[8] = {0};
+static u32 texture_slots[16] = {0};
 
 static Weapon_Type weapon_type = WEAPON_TYPE_PISTOL;
 static bool player_is_grounded = false;
@@ -168,7 +171,7 @@ static void spawn_projectile(Projectile_Type projectile_type)
     bool is_flipped = animation->is_flipped;
     vec2 velocity = {is_flipped ? -weapon.projectile_speed : weapon.projectile_speed, 0};
 
-    entity_create(body->aabb.position, weapon.sprite_size, weapon.sprite_offset, velocity, COLLISION_LAYER_PROJECTILE, projectile_mask, true, weapon.projectile_animation_id, projectile_on_hit, projectile_on_hit_static, 0, 0);
+    entity_create(body->aabb.position, weapon.sprite_size, weapon.sprite_offset, velocity, COLLISION_LAYER_PROJECTILE, projectile_mask, true, weapon.projectile_animation_id, projectile_on_hit, projectile_on_hit_static, 0, 0, ENTITY_PROJECTILE);
     audio_sound_play(weapon.sfx);
 }
 
@@ -176,7 +179,15 @@ void player_on_hit(Body *self, Body *other, Hit hit)
 {
     if (other->collision_layer == COLLISION_LAYER_ENEMY)
     {
-        // Faire quelque chose si le joueur touche l'ennemi
+        Entity *enemy = entity_get(other->entity_id);
+        if (enemy->is_active)
+        {
+
+            show_game_over(score, enemy->entity_type);
+            entity_destroy(self->entity_id);
+            // entity_destroy(other->entity_id);
+            reset();
+        }
     }
 }
 
@@ -209,7 +220,7 @@ void enemy_on_hit_static(Body *self, Static_Body *other, Hit hit)
     }
 }
 
-void spawn_enemy(Enemy_Type enemy_type, bool is_enraged, bool is_flipped)
+void spawn_enemy(Entity_Type enemy_type, bool is_enraged, bool is_flipped)
 {
     float spawn_x = is_flipped ? render_width : 0;
     vec2 position = {spawn_x, (render_height - 64)};
@@ -220,7 +231,7 @@ void spawn_enemy(Enemy_Type enemy_type, bool is_enraged, bool is_flipped)
 
     switch (enemy_type)
     {
-    case ENEMY_TYPE_SMALL:
+    case ENTITY_ENEMY_TYPE_SMALL:
         size[0] = 12;
         size[1] = 25;
         sprite_offset[0] = 0;
@@ -229,8 +240,7 @@ void spawn_enemy(Enemy_Type enemy_type, bool is_enraged, bool is_flipped)
         health = HEALTH_ENEMY_SMALL;
         animation_id = anim_ennemy_small_run_id;
         break;
-
-    case ENEMY_TYPE_MEDIUM:
+    case ENTITY_ENEMY_TYPE_MEDIUM:
         size[0] = 23;
         size[1] = 32;
         sprite_offset[0] = 0;
@@ -240,7 +250,7 @@ void spawn_enemy(Enemy_Type enemy_type, bool is_enraged, bool is_flipped)
         animation_id = anim_ennemy_medium_run_id;
         break;
 
-    case ENEMY_TYPE_LARGE:
+    case ENTITY_ENEMY_TYPE_LARGE:
         size[0] = 52;
         size[1] = 30;
         sprite_offset[0] = 0;
@@ -250,7 +260,7 @@ void spawn_enemy(Enemy_Type enemy_type, bool is_enraged, bool is_flipped)
         animation_id = anim_ennemy_large_run_id;
         break;
 
-    case ENEMY_TYPE_FLYING:
+    case ENTITY_ENEMY_TYPE_FLYING:
         size[0] = 35;
         size[1] = 30;
         sprite_offset[0] = 0;
@@ -261,7 +271,7 @@ void spawn_enemy(Enemy_Type enemy_type, bool is_enraged, bool is_flipped)
         break;
 
     default:
-        ERROR_EXIT("ERREUR SPANW ENNEMY= ", "Type d'ennemi non connu.");
+        ERROR_EXIT("ERREUR SPANW ENNEMY= ", "Type d'ennemi invalide.");
         return;
     }
 
@@ -271,7 +281,7 @@ void spawn_enemy(Enemy_Type enemy_type, bool is_enraged, bool is_flipped)
     }
 
     vec2 velocity = {is_flipped ? -speed : speed, 0};
-    size_t id = entity_create(position, size, sprite_offset, velocity, COLLISION_LAYER_ENEMY, enemy_mask, false, animation_id, NULL, on_hit_static, health, speed);
+    size_t id = entity_create(position, size, sprite_offset, velocity, COLLISION_LAYER_ENEMY, enemy_mask, false, animation_id, NULL, on_hit_static, health, speed, enemy_type);
     Entity *entity = entity_get(id);
     entity->is_enraged = is_enraged;
 }
@@ -288,7 +298,7 @@ void fire_on_hit(Body *self, Body *other, Hit hit)
     }
     else if (other->collision_layer == COLLISION_LAYER_PLAYER)
     {
-        show_game_over(score, rand() % 5);
+        show_game_over(score, ENTITY_FIRE);
         reset();
     }
 }
@@ -319,7 +329,8 @@ void reset(void)
                               player_on_hit,        // on hit
                               player_on_hit_static, // on hit static
                               HEALTH_PLAYER,
-                              SPEED_PLAYER
+                              SPEED_PLAYER,
+                              ENTITY_PLAYER
 
     );
     // Initialiser terrain du  niveau
@@ -340,9 +351,9 @@ void reset(void)
         // Trigger de disparation des ennemis (feu)
         physics_trigger_create((vec2){render_width * 0.5, -4}, (vec2){64, 8}, 0, fire_mask, fire_on_hit);
     }
-    entity_create((vec2){render_width * 0.5, 0}, (vec2){32, 64}, (vec2){0, 0}, (vec2){0, 0}, 0, 0, true, anim_fire_id, NULL, NULL, 0, 0);
-    entity_create((vec2){render_width * 0.5 + 16, -16}, (vec2){32, 64}, (vec2){0, 0}, (vec2){0, 0}, 0, 0, true, anim_fire_id, NULL, NULL, 0, 0);
-    entity_create((vec2){render_width * 0.5 - 16, -16}, (vec2){32, 64}, (vec2){0, 0}, (vec2){0, 0}, 0, 0, true, anim_fire_id, NULL, NULL, 0, 0);
+    entity_create((vec2){render_width * 0.5, 0}, (vec2){32, 64}, (vec2){0, 0}, (vec2){0, 0}, 0, 0, true, anim_fire_id, NULL, NULL, 0, 0, ENTITY_FIRE);
+    entity_create((vec2){render_width * 0.5 + 16, -16}, (vec2){32, 64}, (vec2){0, 0}, (vec2){0, 0}, 0, 0, true, anim_fire_id, NULL, NULL, 0, 0, ENTITY_FIRE);
+    entity_create((vec2){render_width * 0.5 - 16, -16}, (vec2){32, 64}, (vec2){0, 0}, (vec2){0, 0}, 0, 0, true, anim_fire_id, NULL, NULL, 0, 0, ENTITY_FIRE);
 }
 
 static void input_handle(Body *body_player)
@@ -442,7 +453,6 @@ int main(int argc, char *argv[])
 
         size_t adef_ennemy_flying_fly_id = animation_definition_create(&sprite_sheet_enemy_flying, 0.1, 0, (u8[]){0, 1, 2, 3, 4, 5, 6}, 7);
         anim_ennemy_flying_fly_id = animation_create(adef_ennemy_flying_fly_id, true);
-
         size_t adef_ennemy_small_run_id = animation_definition_create(&sprite_sheet_enemy_small, 0.1, 0, (u8[]){0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13}, 14);
         size_t adef_ennemy_medium_run_id = animation_definition_create(&sprite_sheet_enemy_medium, 0.1, 0, (u8[]){0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11}, 12);
         size_t adef_ennemy_large_run_id = animation_definition_create(&sprite_sheet_enemy_large, 0.1, 0, (u8[]){0, 1, 2, 3, 4, 5}, 6);
@@ -554,19 +564,19 @@ int main(int argc, char *argv[])
                     switch (random_value)
                     {
                     case 0:
-                        spawn_enemy(ENEMY_TYPE_SMALL, false, is_flipped);
+                        spawn_enemy(ENTITY_ENEMY_TYPE_SMALL, false, is_flipped);
                         break;
 
                     case 1:
-                        spawn_enemy(ENEMY_TYPE_MEDIUM, false, is_flipped);
+                        spawn_enemy(ENTITY_ENEMY_TYPE_MEDIUM, false, is_flipped);
                         break;
 
                     case 2:
-                        spawn_enemy(ENEMY_TYPE_LARGE, false, is_flipped);
+                        spawn_enemy(ENTITY_ENEMY_TYPE_LARGE, false, is_flipped);
                         break;
 
                     case 3:
-                        spawn_enemy(ENEMY_TYPE_FLYING, false, is_flipped);
+                        spawn_enemy(ENTITY_ENEMY_TYPE_FLYING, false, is_flipped);
                         break;
 
                     default:
