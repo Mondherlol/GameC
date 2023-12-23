@@ -1,19 +1,21 @@
 #include <stdio.h>
 #include <SDL2/SDL.h>
+
 #include "../scenes.h"
 #include "../render.h"
 #include "../util.h"
 #include "../global.h"
 #include "../my_curl.h"
+#include "../entity.h"
+
+float debug_pos_x = 50;
+float debug_pos_y = 50;
 
 #define GAME_OVER_MENU_ITEMS_COUNT 2
 #define ENNEMY_COUNT 5
 
 float width;
 float height;
-
-float debug_pos_x = 50;
-float debug_pos_y = 50;
 
 Image gameOverImages[GAME_OVER_MENU_ITEMS_COUNT];
 Image gameOverNewScoreImages[GAME_OVER_MENU_ITEMS_COUNT];
@@ -42,11 +44,11 @@ void game_over_init()
     init_image(&gameOverNewScoreImages[0], "assets/menu/game_over_new_score_selected_replay.png");
     init_image(&gameOverNewScoreImages[1], "assets/menu/game_over_new_score_selected_quit.png");
 
-    init_image(&ennemiesImages[0], "assets/spritesheets/chicken_solo.png");
-    init_image(&ennemiesImages[1], "assets/spritesheets/bunny_solo.png");
-    init_image(&ennemiesImages[2], "assets/spritesheets/rhino_solo.png");
-    init_image(&ennemiesImages[3], "assets/spritesheets/bat_solo.png");
-    init_image(&ennemiesImages[4], "assets/spritesheets/fire_solo.png");
+    init_image(&ennemiesImages[ENTITY_ENEMY_TYPE_SMALL], "assets/spritesheets/chicken_solo.png");
+    init_image(&ennemiesImages[ENTITY_ENEMY_TYPE_MEDIUM], "assets/spritesheets/bunny_solo.png");
+    init_image(&ennemiesImages[ENTITY_ENEMY_TYPE_LARGE], "assets/spritesheets/rhino_solo.png");
+    init_image(&ennemiesImages[ENTITY_ENEMY_TYPE_FLYING], "assets/spritesheets/bat_solo.png");
+    init_image(&ennemiesImages[ENTITY_FIRE], "assets/spritesheets/fire_solo.png");
 }
 
 void show_game_over(int score, u8 ennemy)
@@ -178,7 +180,8 @@ void display_game_over(SDL_Window *window)
     render_textures(game_over_texture_slots);
 
     // Cause de la mort
-    render_text("Suicide", 540, 77, RED, 1);
+    if (ennemyKiller == ENTITY_FIRE)
+        render_text("Suicide", 540, 77, RED, 1);
 
     // Score actuel
     render_text(scoreText, width / 2, height * 0.60, WHITE, 1);

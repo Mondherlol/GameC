@@ -1,9 +1,13 @@
+#include <string.h>
+
 #include "../global.h"
 #include "../io.h"
 #include "../util.h"
 #include "../input.h"
 
 static const char *CONFIG_DEFAULT =
+    "[player]\n"
+    "username = motaru\n"
     "[controls]\n"
     "up = UP\n"
     "down = DOWN\n"
@@ -52,6 +56,17 @@ static void load_controls(const char *config_buffer)
     config_key_bind(INPUT_KEY_SHOOT, config_get_value(config_buffer, "shoot"));
     config_key_bind(INPUT_KEY_ESCAPE, config_get_value(config_buffer, "escape"));
 }
+static void load_username(const char *config_buffer)
+{
+    const char *username_value = config_get_value(config_buffer, "username");
+    printf("username value = %s", username_value);
+    if (username_value != NULL && strlen(username_value) <= 6)
+        strncpy(global.username, username_value, 6);
+    else
+        strncpy(global.username, "Anon", 6);
+
+    global.username[6] = '\0';
+}
 
 static int config_load(void)
 {
@@ -60,7 +75,7 @@ static int config_load(void)
         return 1;
 
     load_controls(file_config.data);
-
+    load_username(file_config.data);
     free(file_config.data);
 
     return 0;

@@ -8,4 +8,5 @@ void scenes_init()
     menu_init();
     score_init();
     game_over_init();
+    username_menu_init();
 }

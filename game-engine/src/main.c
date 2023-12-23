@@ -20,7 +20,8 @@
 
 void reset(void);
 
-#define DEBUG 1
+static bool DEBUG = false;
+static bool CHEAT = false;
 
 static Mix_Music *MUSIC_STAGE_1;
 static Mix_Chunk *SOUND_JUMP;
@@ -51,17 +52,6 @@ static const float HEALTH_ENEMY_LARGE = 3;
 static const float HEALTH_ENEMY_SMALL = 1;
 static const float HEALTH_ENEMY_FLYING = 1;
 static const float HEALTH_ENEMY_MEDIUM = 1;
-
-typedef enum
-{
-    ENTITY_ENEMY_TYPE_SMALL,
-    ENTITY_ENEMY_TYPE_MEDIUM,
-    ENTITY_ENEMY_TYPE_LARGE,
-    ENTITY_ENEMY_TYPE_FLYING,
-    ENTITY_FIRE,
-    ENTITY_PLAYER,
-    ENTITY_PROJECTILE
-} Entity_Type;
 
 typedef enum collision_layer
 {
@@ -177,12 +167,11 @@ static void spawn_projectile(Projectile_Type projectile_type)
 
 void player_on_hit(Body *self, Body *other, Hit hit)
 {
-    if (other->collision_layer == COLLISION_LAYER_ENEMY)
+    if (other->collision_layer == COLLISION_LAYER_ENEMY && !CHEAT)
     {
         Entity *enemy = entity_get(other->entity_id);
         if (enemy->is_active)
         {
-
             show_game_over(score, enemy->entity_type);
             entity_destroy(self->entity_id);
             // entity_destroy(other->entity_id);
@@ -496,6 +485,9 @@ int main(int argc, char *argv[])
         case GAME_OVER_SCREEN:
             display_game_over(window);
             break;
+        case USERNAME_MENU_SCREEN:
+            display_menu(window);
+            break;
         case GAME_SCREEN:
         {
 
@@ -509,8 +501,9 @@ int main(int argc, char *argv[])
                     global.should_quit = true;
                     break;
                 case SDL_KEYDOWN:
-                    // Vérifier si la touche "r" est pressée
-                    if (event.key.keysym.sym == SDLK_r)
+                    switch (event.key.keysym.sym)
+                    {
+                    case SDLK_r:
                     {
                         printf("Test de la route /ping avec une requête GET dans un thread dédié.......\n");
                         // Créer une structure pour stocker les données de la requête
@@ -521,6 +514,16 @@ int main(int argc, char *argv[])
                         // Créer un thread pour effectuer la requête
                         HANDLE thread = CreateThread(NULL, 0, async_curl_request, curlData, 0, NULL);
                         CloseHandle(thread); // Fermer le handle du thread pour libérer ses ressources lorsqu'il a terminé
+                    }
+                    break;
+                    case SDLK_d:
+                        DEBUG = !DEBUG;
+                        break;
+                    case SDLK_c:
+                        CHEAT = !CHEAT;
+                        break;
+                    default:
+                        break;
                     }
                     break;
                 default:
@@ -642,7 +645,14 @@ int main(int argc, char *argv[])
 
             // Afficher score
             sprintf(scoreText, "%d", score);
-            render_text(scoreText, render_width / 2, render_height - 50, WHITE, 1);
+            render_text(scoreText, render_width / 2, render_height - 25, YELLOW, 1);
+
+            // Si Debug
+            if (DEBUG)
+                render_text("DEBUG", render_width - 50, render_height - 50, ORANGE, 1);
+            // Si Cheat
+            if (CHEAT)
+                render_text("CHEAT", render_width - 50, render_height - 25, RED, 1);
 
             render_end(window);
             break;
