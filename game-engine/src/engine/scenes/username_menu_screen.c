@@ -10,13 +10,10 @@
 Image pseudoMenuImages[2];
 int currentSelection_p = 0;
 
-MyCurlHandle curl_handler;
-
 char current_username[6] = "";
 
 void username_menu_init()
 {
-    mycurl_init(&curl_handler);
 
     init_image(&pseudoMenuImages[0], "assets/menu/fenetre_pseudo_selected_save.png");
     init_image(&pseudoMenuImages[1], "assets/menu/fenetre_pseudo_selected_quit.png");

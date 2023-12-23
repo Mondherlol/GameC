@@ -394,7 +394,8 @@ int main(int argc, char *argv[])
     time_init(60);
     SDL_Window *window = render_init();
     config_init();
-    // controller_init();
+    controller_init();
+    mycurl_init(&global.curl_handle);
     physics_init();
     entity_init();
     animation_init();
@@ -414,11 +415,6 @@ int main(int argc, char *argv[])
         audio_sound_load(&SOUND_PLAYER_DEATH, "assets/audio/player_death.wav");
         audio_sound_load(&SOUND_SHOOT, "assets/audio/shoot.wav");
     }
-
-    // Initialiser curl
-
-    MyCurlHandle curl_handle;
-    mycurl_init(&curl_handle);
 
     // Initialiser sprites
     {
@@ -508,7 +504,7 @@ int main(int argc, char *argv[])
                         printf("Test de la route /ping avec une requête GET dans un thread dédié.......\n");
                         // Créer une structure pour stocker les données de la requête
                         CurlRequestData *curlData = malloc(sizeof(CurlRequestData));
-                        curlData->handle = &curl_handle;
+                        curlData->handle = &global.curl_handle;
                         curlData->endpoint = "/ping";
 
                         // Créer un thread pour effectuer la requête
@@ -664,6 +660,6 @@ int main(int argc, char *argv[])
 
         time_update_late();
     }
-
+    mycurl_cleanup(&global.curl_handle);
     return EXIT_SUCCESS;
 }

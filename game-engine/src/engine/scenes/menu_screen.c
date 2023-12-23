@@ -19,8 +19,6 @@ int currentSelection = 0;
 
 u8 texture_slots[16] = {0};
 
-MyCurlHandle curl_handler;
-
 // Obtenir les dimensions de la fenetre
 float width;
 float height;
@@ -46,9 +44,7 @@ void menu_init()
 
     height = global.window_height / render_get_scale();
 
-    mycurl_init(&curl_handler);
-
-    if (genererate_code(&curl_handler) != 0)
+    if (genererate_code(&global.curl_handle) != 0)
     {
         fprintf(stderr, "La requête pour generer le code a echouer.\n");
     };
@@ -161,8 +157,8 @@ void display_menu(SDL_Window *window)
     if (global.current_screen == MENU_SCREEN)
     {
         render_textures(texture_slots);
-        render_text(global.generated_code, 55, height * 0.86, YELLOW, 1);
         render_text(global.username, 571, 306, WHITE, 1);
+        render_text(global.generated_code, 55, height * 0.86, YELLOW, 1);
         render_end(window);
     }
     else if (global.current_screen == USERNAME_MENU_SCREEN)
