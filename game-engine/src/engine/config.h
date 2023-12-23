@@ -11,3 +11,4 @@ typedef struct config
 
 void config_init(void);
 void config_key_bind(Input_Key key, const char *key_name);
+void save_username(char *new_username);

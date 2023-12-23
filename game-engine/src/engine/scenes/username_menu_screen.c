@@ -5,26 +5,41 @@
 #include "../util.h"
 #include "../global.h"
 #include "../my_curl.h"
+#include "../config.h"
 
 Image pseudoMenuImages[2];
 int currentSelection_p = 0;
 
 MyCurlHandle curl_handler;
 
-float width;
-float height;
+char current_username[6] = "";
 
 void username_menu_init()
 {
+    mycurl_init(&curl_handler);
 
     init_image(&pseudoMenuImages[0], "assets/menu/fenetre_pseudo_selected_save.png");
     init_image(&pseudoMenuImages[1], "assets/menu/fenetre_pseudo_selected_quit.png");
+    strncpy(current_username, global.username, 6);
+}
 
-    width = global.window_width / render_get_scale();
+// Fonction pour mettre à jour le pseudo en cours de saisie
+void update_current_username(SDL_Keycode key)
+{
+    if (strlen(current_username) < 6)
+    {
+        if ((key >= SDLK_a && key <= SDLK_z) || (key >= SDLK_0 && key <= SDLK_9))
+        {
+            // Ajoute la lettre ou le chiffre à la fin du pseudo en cours de saisie
+            strncat(current_username, SDL_GetKeyName(key), 1);
+        }
+    }
 
-    height = global.window_height / render_get_scale();
-
-    mycurl_init(&curl_handler);
+    // Supprime le dernier caractère si la touche Backspace est enfoncée
+    if (key == SDLK_BACKSPACE && strlen(current_username) > 0)
+    {
+        current_username[strlen(current_username) - 1] = '\0';
+    }
 }
 
 void display_username_menu(SDL_Window *window, u32 texture_slots[16])
@@ -58,6 +73,7 @@ void display_username_menu(SDL_Window *window, u32 texture_slots[16])
                 switch (currentSelection_p)
                 {
                 case 0:
+                    save_username(current_username);
                     global.current_screen = MENU_SCREEN;
                     break;
                 case 1:
@@ -66,6 +82,7 @@ void display_username_menu(SDL_Window *window, u32 texture_slots[16])
                 }
                 break;
             default:
+                update_current_username(menuEvent.key.keysym.sym);
                 break;
             }
             break;
@@ -76,7 +93,7 @@ void display_username_menu(SDL_Window *window, u32 texture_slots[16])
 
     render_textures(texture_slots);
 
-    render_text(global.username, (width / 2), (height / 2) - 6, WHITE, 1);
+    render_text(current_username, (render_width / 2), (render_height / 2) - 6, WHITE, 1);
 
     render_end(window);
 }

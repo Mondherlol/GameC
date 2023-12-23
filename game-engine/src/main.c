@@ -641,7 +641,7 @@ int main(int argc, char *argv[])
 
             render_textures(texture_slots);
 
-            render_text("joueur", body_player->aabb.position[0] - 5, body_player->aabb.position[1] + 20, WHITE, 1);
+            render_text(global.username, body_player->aabb.position[0] - 5, body_player->aabb.position[1] + 20, WHITE, 1);
 
             // Afficher score
             sprintf(scoreText, "%d", score);

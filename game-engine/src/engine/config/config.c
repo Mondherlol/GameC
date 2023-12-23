@@ -60,7 +60,7 @@ static void load_username(const char *config_buffer)
 {
     const char *username_value = config_get_value(config_buffer, "username");
     printf("username value = %s", username_value);
-    if (username_value != NULL && strlen(username_value) <= 6)
+    if (username_value != NULL && strlen(username_value) <= 6 && strlen(username_value) >= 1)
         strncpy(global.username, username_value, 6);
     else
         strncpy(global.username, "Anon", 6);
@@ -100,4 +100,49 @@ void config_key_bind(Input_Key key, const char *key_name)
         ERROR_RETURN(, " Erreur d'assignation de touche. Touche non reconnue : %s \n", key_name);
 
     global.config.keybinds[key] = scan_code;
+}
+
+void save_username(char *new_username)
+{
+    if (new_username == NULL || strlen(new_username) > 6 || strlen(new_username) < 1)
+    {
+        strncpy(new_username, "ANON", 6);
+        new_username[6] = '\0';
+    }
+
+    // Mettez à jour le pseudo dans global.username
+    strncpy(global.username, new_username, 6);
+    global.username[6] = '\0'; // Assurez-vous de terminer la chaîne avec un caractère nul
+
+    // Chargez le contenu du fichier config.ini
+    File file_config = io_file_read("./config.ini");
+    if (!file_config.is_valid)
+        ERROR_EXIT("Impossible de lire le fichier config.ini.\n");
+
+    // Recherche de la ligne "username" dans le fichier config.ini
+    char *line = strstr(file_config.data, "username");
+    if (!line)
+    {
+        free(file_config.data);
+        ERROR_EXIT("Impossible de trouver la clé 'username' dans le fichier config.ini.\n");
+    }
+
+    // Ouvrez le fichier config.ini en mode d'écriture binaire
+    FILE *file = fopen("./config.ini", "wb");
+    if (!file)
+    {
+        free(file_config.data);
+        ERROR_EXIT("Impossible d'ouvrir le fichier config.ini pour écriture.\n");
+    }
+
+    // Écrivez le contenu mis à jour dans le fichier config.ini en utilisant fwrite
+    fwrite(file_config.data, 1, line - file_config.data, file);
+    fprintf(file, "username = %s", new_username);
+    fprintf(file, "%s", strchr(line, '\n'));
+
+    // Fermez le fichier
+    fclose(file);
+
+    // Libérez la mémoire du contenu du fichier config.ini
+    free(file_config.data);
 }

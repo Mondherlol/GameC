@@ -191,6 +191,4 @@ void display_game_over(SDL_Window *window)
     render_text(playerKiller, 75, height * 0.31, WHITE, 1);
 
     render_end(window);
-
-    //  540, 77
 }
