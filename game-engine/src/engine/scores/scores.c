@@ -7,7 +7,7 @@
 
 #define SCORE_FILE_PATH "./scores.txt"
 
-const static char *SCORE_DEFAULT = "sarra:100\nmondher:0\n";
+const static char *SCORE_DEFAULT = "sarra:60000\nmondher:2000000\n";
 
 // Fonction pour charger le fichier de scores
 bool Score_load(void)
@@ -16,7 +16,7 @@ bool Score_load(void)
     if (!file_score.is_valid)
         return false;
 
-    // printf("Fichier des scores :\n%s", file_score.data);
+    printf("Fichier des scores :\n%s", file_score.data);
 
     free(file_score.data);
 
@@ -60,6 +60,7 @@ void WriteLocalScore(const char *nom, int score)
 }
 
 // Fonction pour obtenir les scores locaux depuis le fichier
+
 Score* GetLocalScores(size_t* count)
 {
     // Lire le fichier des scores
@@ -97,7 +98,7 @@ Score* GetLocalScores(size_t* count)
     temp_data = file.data; 
    for (int i = 0; i < num_scores; i++)
     {
-    //strtok utilisée pour découper une chaîne en sous-chaînes (tokens) en fonction de délimiteurs     
+   //strtok utilisée pour découper une chaîne en sous-chaînes (tokens) en fonction de délimiteurs     
     // Utiliser NULL pour continuer le traitement de la même chaîne
         token = strtok(temp_data, ":");
         strncpy(scores[i].nom, token, sizeof(scores[i].nom) - 1);
@@ -131,4 +132,25 @@ Score* GetLocalScores(size_t* count)
     *count = num_scores;
 
     return scores;
+}
+//requette post ala base 
+void SendOnlineScore(const char *nom, int score)
+{
+    // Construire les données POST
+    char post_data[256];
+    printf(post_data, sizeof(post_data), "nom=%s&score=%d", nom, score);
+
+    // Initialiser la structure MyCurlHandle
+    MyCurlHandle handle;
+    mycurl_init(&handle);
+
+    // Effectuer la requête POST
+    if (mycurl_post(&handle, "/game/sendscore", post_data) != 0)
+    {
+        printf(stderr, "Erreur lors de l'envoi du score en ligne.\n");
+        // Gérer l'erreur selon les besoins
+    }
+
+    // Nettoyer la structure MyCurlHandle
+    mycurl_cleanup(&handle);
 }
