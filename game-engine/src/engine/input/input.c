@@ -8,6 +8,7 @@
 #define JOYSTICK_BUTTON_LEFT 13
 #define JOYSTICK_BUTTON_RIGHT 14
 #define JOYSTICK_BUTTON_JUMP 1
+#define JOYSTICK_BUTTON_SHOOT 2
 #define JOYSTICK_BUTTON_START 6
 
 // Gérer l'état des touches pressées
@@ -37,6 +38,7 @@ void input_update()
     update_key_state(keyboard_state[global.config.keybinds[INPUT_KEY_UP]], &global.input.up);
     update_key_state(keyboard_state[global.config.keybinds[INPUT_KEY_DOWN]], &global.input.down);
     update_key_state(keyboard_state[global.config.keybinds[INPUT_KEY_ESCAPE]], &global.input.escape);
+    update_key_state(keyboard_state[global.config.keybinds[INPUT_KEY_SHOOT]], &global.input.shoot);
 
     // Si manette
     if (SDL_NumJoysticks() > 0)
@@ -54,6 +56,7 @@ void input_update()
             // Le reste
             update_key_state(SDL_JoystickGetButton(joystick, JOYSTICK_BUTTON_JUMP), &global.input.jump_controller);
             update_key_state(SDL_JoystickGetButton(joystick, JOYSTICK_BUTTON_START), &global.input.start_controller);
+            update_key_state(SDL_JoystickGetButton(joystick, JOYSTICK_BUTTON_SHOOT), &global.input.shoot_controller);
 
             SDL_JoystickClose(joystick);
         }

@@ -112,7 +112,7 @@ void animation_update(float dt)
         }
     }
 }
-void animation_render(Animation *animation, vec2 position, vec4 color, u32 texture_slots[8])
+void animation_render(Animation *animation, vec2 position, vec4 color, u32 texture_slots[16])
 {
 
     Animation_Definition *adef = array_list_get(animation_definition_storage, animation->animation_definition_id);

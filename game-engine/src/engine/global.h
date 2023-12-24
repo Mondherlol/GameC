@@ -11,7 +11,9 @@ typedef enum screens
 {
     GAME_SCREEN = 0,
     MENU_SCREEN = 1,
-    SCORE_SCREEN = 2
+    SCORE_SCREEN = 2,
+    GAME_OVER_SCREEN = 3,
+    USERNAME_MENU_SCREEN = 4
 } Screens;
 
 typedef struct global
@@ -24,6 +26,7 @@ typedef struct global
     bool should_quit;
     u8 current_screen;
     char generated_code[8]; // Code de la partie
+    char username[6];
 
 } Global;
 

@@ -9,7 +9,7 @@
 
 Image menuImage;
 
-u8 score_screen_texture_slots[8] = {0};
+u8 score_screen_texture_slots[16] = {0};
 
 
 
