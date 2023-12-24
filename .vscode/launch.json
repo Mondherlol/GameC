@@ -8,8 +8,8 @@
       "args": [],
       "stopAtEntry": false,
       "externalConsole": true,
-      "cwd": "c:/Users/PC/Desktop/projetgameC/GameC/game-engine/src",
-      "program": "c:/Users/PC/Desktop/projetgameC/GameC/game-engine/src/build/Debug/outDebug",
+      "cwd": "c:/Users/PC/Desktop/projetgameC/GameC/game-engine/src/engine/scenes",
+      "program": "c:/Users/PC/Desktop/projetgameC/GameC/game-engine/src/engine/scenes/build/Debug/outDebug",
       "MIMode": "gdb",
       "miDebuggerPath": "gdb",
       "setupCommands": [

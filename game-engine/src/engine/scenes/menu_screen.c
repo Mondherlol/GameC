@@ -87,8 +87,12 @@ void display_menu(SDL_Window *window)
                     global.current_screen = GAME_SCREEN;
                     break;
                 case 1:
+                {
+                    score_reset();
                     global.current_screen = SCORE_SCREEN;
                     break;
+
+                }
                 case 2:
                     global.should_quit = true; // Quitter le jeu
                     break;

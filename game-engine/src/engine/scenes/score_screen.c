@@ -11,10 +11,43 @@ Image menuImage;
 
 u8 score_screen_texture_slots[8] = {0};
 
+
+
+//Pour stocker les struc scores, declaration d'un pointeur 
+Score *localscores;
+
+//Pour stocker le nombre de scores
+size_t count;
+
 void score_init()
 {
     init_image(&menuImage, "assets/menu/Scores.png");
+    local_score_init();
+    // WriteLocalScore("sarra",362505);
+
 }
+
+void score_reset(){
+    // Appeler GetLocalScores pour obtenir les scores locaux
+    localscores = GetLocalScores(&count);
+        
+    if (localscores != NULL)
+    {
+        for (size_t i = 0; i < count; i++)
+        {
+            char text[50];
+            snprintf(text, sizeof(text), "%s: %d", localscores[i].nom, localscores[i].score);
+           
+            printf("%s\n", text);  
+        }
+
+      
+        free(localscores);
+    }
+
+
+}
+
 
 void display_score(SDL_Window *window)
 {
@@ -45,24 +78,20 @@ void display_score(SDL_Window *window)
         }
     }
 
-    // Get and display the local scores
-    size_t count;
-    Score *scores = GetLocalScores(&count);
 
-    if (scores != NULL)
-    {
-        for (size_t i = 0; i < count; i++)
-        {
-            char text[50];
-            snprintf(text, sizeof(text), "%s: %d", scores[i].nom, scores[i].score);
-            render_text(text, 175, render_height * (0.4 + i * 0.1), WHITE, 1);
-        }
-
-        // Free the allocated memory for scores
-        free(scores);
-    }
     render_textures(score_screen_texture_slots);
-    render_text("Mondher 2500", 175, render_height * 0.4, WHITE, 1);
+
+   // afficher le contenu du tab 
+    for (size_t i = 0; i < count; i++)
+    {
+        char text[50];
+        printf(text, sizeof(text), "%s: %d", localscores[i].nom, localscores[i].score);
+        
+        render_text(text, 175, render_height * (0.4 + i * 0.1), WHITE, 1);
+    }
+
+    
 
     render_end(window);
 }
+

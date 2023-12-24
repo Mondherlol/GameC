@@ -5,7 +5,7 @@
 #include "../io.h"
 #include "../scores.h"
 
-#define SCORE_FILE_PATH "C:/Users/PC/Desktop/projetgameC/GameC/game-engine/src/engine/scores/scores.txt"
+#define SCORE_FILE_PATH "./scores.txt"
 
 const static char *SCORE_DEFAULT = "sarra:100\nmondher:0\n";
 
@@ -16,7 +16,7 @@ bool Score_load(void)
     if (!file_score.is_valid)
         return false;
 
-    printf("Fichier des scores :\n%s", file_score.data);
+    // printf("Fichier des scores :\n%s", file_score.data);
 
     free(file_score.data);
 
@@ -24,7 +24,7 @@ bool Score_load(void)
 }
 
 // Fonction d'initialisation des scores
-void Score_init(void)
+void local_score_init(void)
 {
      if (Score_load())
     {
@@ -54,56 +54,81 @@ void WriteLocalScore(const char *nom, int score)
         return;
     }
 
-    fprintf(fp, "%s,%d\n", nom, score);
+    fprintf(fp, "%s:%d\n", nom,score);
 
     fclose(fp);
 }
 
 // Fonction pour obtenir les scores locaux depuis le fichier
-Score *GetLocalScores(size_t *count)
+Score* GetLocalScores(size_t* count)
 {
-    // Read the scores file
+    // Lire le fichier des scores
     File file = io_file_read(SCORE_FILE_PATH);
 
     if (!file.is_valid)
     {
-        fprintf(stderr, "Erreur lors de la lecture du fichier des scores : %s.\n", SCORE_FILE_PATH);
+        fprintf(stderr, "Erreur lors de la lecture du fichier des scores.\n");
         return NULL;
     }
 
     char *token;
     char *delimiters = " \n";
-    char *saveptr;
+    int num_scores = 0;
 
-    // Count the number of scores to allocate memory
-    char *temp_data = file.data;
+    
+     // Copier la chaîne originale pour compter le nombre de scores
+    char *temp_count_data = strdup(file.data);
+    // Compter le nombre de scores pour allouer la mémoire
+    char *temp_data = temp_count_data;
     while ((token = strtok(temp_data, delimiters)) != NULL)
     {
-        (*count)++;
+        num_scores++;
         temp_data = NULL;
     }
+        // Libérer la mémoire de la copie utilisée pour compter
+    free(temp_count_data);
+    // Afficher le nombre de scores
+    printf("Nombre de scores : %d\n", num_scores);
 
-    // Allocate memory for the scores array
-    Score *scores = (Score *)malloc((*count) * sizeof(Score));
+    // Allouer la mémoire pour le tableau de scores
+    Score *scores = (Score *)malloc(num_scores * sizeof(Score));
 
-    // Fill the scores array
-    temp_data = file.data;
-    for (size_t i = 0; i < (*count); i++)
+    // Remplir le tableau de scores
+    temp_data = file.data; 
+   for (int i = 0; i < num_scores; i++)
     {
-        strncpy(scores[i].nom, strtok(temp_data, delimiters), sizeof(scores[i].nom) - 1);
-        temp_data = NULL;
-        scores[i].score = atoi(strtok(temp_data, delimiters));
+    //strtok utilisée pour découper une chaîne en sous-chaînes (tokens) en fonction de délimiteurs     
+    // Utiliser NULL pour continuer le traitement de la même chaîne
+        token = strtok(temp_data, ":");
+        strncpy(scores[i].nom, token, sizeof(scores[i].nom) - 1);
+        printf(" %d", i);     
+        printf("Nom joueur = %s", scores[i].nom);
+        printf(" %d", i);     
+   // Utiliser NULL pour continuer le traitement de la même chaîne
+        token = strtok(NULL, delimiters);
+
+        // Vérifier si token n'est pas NULL avant d'extraire le score
+        if (token != NULL)
+        {
+            scores[i].score = atoi(token);
+            printf(" a fait un score de %d points\n", scores[i].score);
+        }
+        else
+        {
+            // Gérer l'erreur si le score est manquant
+            fprintf(stderr, "Erreur: Score manquant pour le joueur %s\n", scores[i].nom);
+            scores[i].score = 0;  // Définir le score à 0 par défaut
+        }
+
+        // Utiliser NULL pour continuer le traitement de la même chaîne
         temp_data = NULL;
     }
 
-    // Free the memory of the read file
+    // Libérer la mémoire du fichier lu
     free(file.data);
 
-    // Display the scores in the console
-    for (size_t i = 0; i < (*count); i++)
-    {
-        printf("Nom: %s, Score: %d\n", scores[i].nom, scores[i].score);
-    }
+    // Mettre à jour le paramètre de sortie
+    *count = num_scores;
 
     return scores;
 }

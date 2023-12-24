@@ -323,7 +323,7 @@ int main(int argc, char *argv[])
     audio_init();
     scenes_init();
     score_init();
-
+  
     SDL_ShowCursor(false); // Cacher le curseur
 
     // Initialiser audio
