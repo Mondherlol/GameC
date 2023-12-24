@@ -70,7 +70,9 @@
     "time.h": "c",
     "input.h": "c",
     "config.h": "c",
-    "entity.h": "c"
+    "entity.h": "c",
+    "array_list.h": "c",
+    "animation.h": "c"
   },
   "C_Cpp.errorSquiggles": "disabled"
 }

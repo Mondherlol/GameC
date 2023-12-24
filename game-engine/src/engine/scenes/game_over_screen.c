@@ -24,19 +24,20 @@ int currentButtonSelection = 0;
 int highScore = 3;
 
 u8 game_over_texture_slots[16] = {0};
-MyCurlHandle curl_handler;
 bool isNewHighScore = false;
 u8 ennemyKiller = 0;
 char playerKiller[] = "Mondher";
 static char scoreText[20];
 static char highScoreText[20];
 
+// Endpoint et données POST
+const char *endpoint = "/scores/test/10000";
+const char *post_data = ""; // Remplacez ceci par les données POST réelles si nécessaire
+
 void game_over_init()
 {
     width = global.window_width / render_get_scale();
     height = global.window_height / render_get_scale();
-
-    mycurl_init(&curl_handler);
 
     init_image(&gameOverImages[0], "assets/menu/game_over_normal_selected_replay.png");
     init_image(&gameOverImages[1], "assets/menu/game_over_normal_selected_quit.png");
@@ -51,6 +52,26 @@ void game_over_init()
     init_image(&ennemiesImages[ENTITY_FIRE], "assets/spritesheets/fire_solo.png");
 }
 
+// Fonction de callback pour traiter la réponse de la requête POST
+void handle_post_response(const char *response)
+{
+    printf("Réponse de la requête POST : %s\n", response);
+}
+
+void save_high_score(int score)
+{
+    printf("Sauvegarde du high score dans un tread dédié ...\n");
+    // Construire l'URL avec le nom d'utilisateur et le score
+    char endpoint[256];
+    snprintf(endpoint, sizeof(endpoint), "/scores/%s/%d", global.username, score);
+
+    // Appeler mycurl_post_async avec le nouvel endpoint
+    if (mycurl_post_async(&global.curl_handle, endpoint, post_data, handle_post_response) != 0)
+    {
+        fprintf(stderr, "Erreur lors de l'appel de mycurl_post_async\n");
+    }
+}
+
 void show_game_over(int score, u8 ennemy)
 {
     // highScore = 3; // Initialisation bidon, à remplacer avec vrai highscore
@@ -61,30 +82,12 @@ void show_game_over(int score, u8 ennemy)
     {
         isNewHighScore = true;
         highScore = score;
+        save_high_score(score);
     }
     sprintf(highScoreText, "%d", highScore);
     ennemyKiller = ennemy;
     currentButtonSelection = 0;
     global.current_screen = GAME_OVER_SCREEN;
-}
-
-// Fonction pour mettre à jour la position de l'ennemi avec les valeurs de débogage
-void debug_update_render()
-{
-    render_begin();
-    render_image(isNewHighScore ? &gameOverNewScoreImages[currentButtonSelection] : &gameOverImages[currentButtonSelection],
-                 (vec2){0, 0},                                                                                                                                  // position
-                 (vec2){gameOverImages[currentButtonSelection].width / render_get_scale(), gameOverImages[currentButtonSelection].height / render_get_scale()}, // taille
-                 game_over_texture_slots);
-
-    render_image(&ennemiesImages[0],
-                 (vec2){529, 95},                                           // position
-                 (vec2){ennemiesImages[0].width, ennemiesImages[0].height}, // taille
-                 game_over_texture_slots);
-
-    render_textures(game_over_texture_slots);
-
-    render_text("Suicide", debug_pos_x, debug_pos_y, WHITE, 1);
 }
 
 void display_game_over(SDL_Window *window)
@@ -129,39 +132,13 @@ void display_game_over(SDL_Window *window)
                     break;
                 }
                 break;
-            case SDLK_d:
-                // Entrer en mode débogage
-                printf("Enter debug mode. Type 'exit' to exit debug mode.\n");
-                while (1)
+            case SDLK_r:
+                printf("Test de la route /scores avec une requête POST dans un thread dédié.......\n");
+                // Appel de la fonction mycurl_post_async
+                if (mycurl_post_async(&global.curl_handle, endpoint, post_data, handle_post_response) != 0)
                 {
-                    char input[100];
-                    printf("Enter command (x , y, exit): ");
-                    scanf("%s", input);
-
-                    if (strcmp(input, "exit") == 0)
-                        break;
-                    else if (strcmp(input, "x") == 0)
-                    {
-                        printf("Enter new value for pos_x: ");
-                        scanf("%f", &debug_pos_x);
-                        render_end(window);
-                        debug_update_render();
-                        render_end(window);
-                    }
-                    else if (strcmp(input, "y") == 0)
-                    {
-                        printf("Enter new value for pos_y: ");
-                        scanf("%f", &debug_pos_y);
-                        render_end(window);
-                        debug_update_render();
-                        render_end(window);
-                    }
-                    else
-                    {
-                        printf("Unknown command. Try again.\n");
-                    }
+                    fprintf(stderr, "Erreur lors de l'appel de mycurl_post_async\n");
                 }
-                printf("Exit debug mode.\n");
                 break;
             default:
                 break;

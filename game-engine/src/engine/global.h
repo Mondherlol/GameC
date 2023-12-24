@@ -6,6 +6,7 @@
 #include "time.h"
 #include <stdbool.h>
 #include "types.h"
+#include "my_curl.h"
 
 typedef enum screens
 {
@@ -27,6 +28,7 @@ typedef struct global
     u8 current_screen;
     char generated_code[8]; // Code de la partie
     char username[6];
+    MyCurlHandle curl_handle;
 
 } Global;
 

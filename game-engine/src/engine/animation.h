@@ -2,7 +2,7 @@
 
 #include "render.h"
 
-#define MAX_FRAMES 16 // Frame à afficher par seconde de l'animation
+#define MAX_FRAMES 17 // Frame à afficher par seconde de l'animation
 
 typedef struct animation_frame
 {
@@ -26,6 +26,7 @@ typedef struct animation
     bool does_loop;
     bool is_active;
     bool is_flipped;
+    bool played;
 } Animation;
 
 void animation_init(void);

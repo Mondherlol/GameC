@@ -30,6 +30,7 @@ static Mix_Chunk *SOUND_BULLET_HIT_WALL;
 static Mix_Chunk *SOUND_HURT;
 static Mix_Chunk *SOUND_ENEMY_DEATH;
 static Mix_Chunk *SOUND_PLAYER_DEATH;
+static Mix_Chunk *SOUND_FRUIT_COLLECT;
 
 static Sprite_Sheet sprite_sheet_player;
 static Sprite_Sheet sprite_sheet_map;
@@ -39,6 +40,10 @@ static Sprite_Sheet sprite_sheet_enemy_large;
 static Sprite_Sheet sprite_sheet_enemy_flying;
 static Sprite_Sheet sprite_sheet_fire;
 static Sprite_Sheet sprite_sheet_props;
+static Sprite_Sheet sprite_sheet_apple;
+static Sprite_Sheet sprite_sheet_banana;
+static Sprite_Sheet sprite_sheet_pineapple;
+static Sprite_Sheet sprite_sheet_collected;
 
 static const float HEALTH_PLAYER = 0;
 static const float SPEED_PLAYER = 250;
@@ -52,6 +57,7 @@ static const float HEALTH_ENEMY_LARGE = 3;
 static const float HEALTH_ENEMY_SMALL = 1;
 static const float HEALTH_ENEMY_FLYING = 1;
 static const float HEALTH_ENEMY_MEDIUM = 1;
+static const float POINTS_FRUIT = 5;
 
 typedef enum collision_layer
 {
@@ -60,8 +66,18 @@ typedef enum collision_layer
     COLLISION_LAYER_TERRAIN = 1 << 2,
     COLLISION_LAYER_ENEMY_PASSTHROUGH = 1 << 3,
     COLLISION_LAYER_PROJECTILE = 1 << 4,
+    COLLISION_LAYER_FRUIT = 1 << 5,
+    COLLISION_LAYER_FX = 1 << 6,
 
 } Collision_Layer;
+
+typedef enum fruit_type
+{
+    FRUIT_TYPE_APPLE,
+    FRUIT_TYPE_BANANA,
+    FRUIT_TYPE_PINEAPPLE,
+    FRUIT_TYPE_COUNT,
+} Fruit_Type;
 
 typedef enum weapon_type
 {
@@ -92,12 +108,30 @@ typedef struct weapon
     Mix_Chunk *sfx;
 } Weapon;
 
+typedef struct fruit
+{
+    // float spawn_rate;
+    vec2 sprite_size;
+    vec2 sprite_offset;
+    size_t fruit_animation_id;
+} Fruit;
+
+#define WIDTH 640
+#define HEIGHT 360
 static Weapon weapons[WEAPON_TYPE_COUNT] = {0};
+static Fruit fruits[FRUIT_TYPE_COUNT] = {0};
+static const float SPAWN_REGIONS[][4] = {
+    {WIDTH * 0.5 - 570 * 0.5, HEIGHT * 0.5 + 5 - 93 * 0.5, 570 / 2, 93 / 2},
+    {WIDTH * 0.25 - (WIDTH * 0.4) * 0.5, 70 - 60 * 0.5, (WIDTH * 0.4) / 2, 60 / 2},
+    {WIDTH * 0.75 - (WIDTH * 0.4) * 0.5, 70 - 60 * 0.5, (WIDTH * 0.4) / 2, (60) / 2},
+    {WIDTH * 0.5 - 570 * 0.5, HEIGHT - 64 - 60 * 0.5, 570 / 2, 60 / 2}};
+static const u32 SPAWN_REGION_COUNT = 4;
 
 static const u8 enemy_mask = COLLISION_LAYER_PLAYER | COLLISION_LAYER_TERRAIN;
-static u8 player_mask = COLLISION_LAYER_ENEMY | COLLISION_LAYER_TERRAIN | COLLISION_LAYER_ENEMY_PASSTHROUGH;
+static u8 player_mask = COLLISION_LAYER_ENEMY | COLLISION_LAYER_TERRAIN | COLLISION_LAYER_ENEMY_PASSTHROUGH | COLLISION_LAYER_FRUIT;
 static const u8 fire_mask = COLLISION_LAYER_ENEMY | COLLISION_LAYER_PLAYER;
 static u8 projectile_mask = COLLISION_LAYER_ENEMY | COLLISION_LAYER_TERRAIN;
+static u8 fruit_mask = COLLISION_LAYER_TERRAIN | COLLISION_LAYER_PLAYER;
 
 static SDL_Window *window;
 
@@ -112,6 +146,11 @@ static size_t anim_ennemy_flying_fly_id;
 static size_t anim_fire_id;
 static size_t anim_projectile_small_id;
 
+static size_t anim_fruit_apple_id;
+static size_t anim_fruit_banana_id;
+static size_t anim_fruit_pineapple_id;
+static size_t anim_fruit_collected_id;
+
 static size_t player_id;
 static u32 texture_slots[16] = {0};
 
@@ -121,11 +160,13 @@ static float spawn_timer = 0;
 static float ground_timer = 0;
 static float shoot_timer = 0;
 static int score = 0;
+static float fruit_timer = 0;
+static u8 fruits_count = 0;
+
 char scoreText[20];
 
 void projectile_on_hit(Body *self, Body *other, Hit hit)
 {
-
     if (other->collision_layer == COLLISION_LAYER_ENEMY && other->is_active)
     {
         Entity *projectile = entity_get(self->entity_id);
@@ -178,6 +219,20 @@ void player_on_hit(Body *self, Body *other, Hit hit)
             reset();
         }
     }
+    else if (other->collision_layer == COLLISION_LAYER_FRUIT)
+    {
+        Entity *fruit = entity_get(other->entity_id);
+        if (fruit->is_active)
+        {
+            score += POINTS_FRUIT;
+            fruits_count--;
+            Body *body = physics_body_get(fruit->body_id);
+            entity_create(body->aabb.position, (vec2){32, 32}, fruit->sprite_offset, body->velocity, COLLISION_LAYER_FX, fruit_mask, true, anim_fruit_collected_id, NULL, NULL, 0, 0, ENTITY_FX);
+            fruit->is_active = false;
+            entity_destroy(other->entity_id);
+            audio_sound_play(SOUND_FRUIT_COLLECT);
+        }
+    }
 }
 
 void player_on_hit_static(Body *self, Static_Body *other, Hit hit)
@@ -207,6 +262,36 @@ void enemy_on_hit_static(Body *self, Static_Body *other, Hit hit)
         else
             self->velocity[0] = -entity->speed;
     }
+}
+
+float frandr(float min, float max)
+{
+    float r = (rand() % 100) / 100.0f;
+    return r * (max - min) + min;
+}
+
+void spawn_fruit(Fruit_Type fruit_type)
+{
+
+    const float *region = &SPAWN_REGIONS[rand() % SPAWN_REGION_COUNT][0];
+    float x = frandr(region[0], region[0] + region[2]);
+    float y = frandr(region[1], region[1] + region[3]);
+
+    Fruit fruit = fruits[fruit_type];
+
+    entity_create((vec2){x, y},
+                  fruit.sprite_size,
+                  fruit.sprite_offset,
+                  (vec2){0, 0},
+                  COLLISION_LAYER_FRUIT,
+                  fruit_mask,
+                  false,
+                  fruit.fruit_animation_id,
+                  NULL,
+                  NULL,
+                  0,
+                  0,
+                  ENTITY_FRUIT);
 }
 
 void spawn_enemy(Entity_Type enemy_type, bool is_enraged, bool is_flipped)
@@ -290,6 +375,11 @@ void fire_on_hit(Body *self, Body *other, Hit hit)
         show_game_over(score, ENTITY_FIRE);
         reset();
     }
+    else if (other->collision_layer == COLLISION_LAYER_FRUIT)
+    {
+        entity_destroy(other->entity_id);
+        fruits_count = 0;
+    }
 }
 
 void reset(void)
@@ -303,6 +393,7 @@ void reset(void)
     spawn_timer = 0;
     shoot_timer = 0;
     score = 0;
+    fruits_count = 0;
 
     float width = global.window_width / render_get_scale();
     float height = global.window_height / render_get_scale();
@@ -325,15 +416,15 @@ void reset(void)
     // Initialiser terrain du  niveau
     {
 
-        physics_static_body_create((vec2){width * 0.5, height - 16}, (vec2){width, 32}, COLLISION_LAYER_TERRAIN);         // Plafond
-        physics_static_body_create((vec2){width * 0.25 - 16, 16}, (vec2){width * 0.5 - 32, 48}, COLLISION_LAYER_TERRAIN); // Sol gauche
-        physics_static_body_create((vec2){width * 0.75 + 16, 16}, (vec2){width * 0.5 - 32, 48}, COLLISION_LAYER_TERRAIN); // Sol droite
-        physics_static_body_create((vec2){16, height * 0.5 - 3 * 32}, (vec2){32, height}, COLLISION_LAYER_TERRAIN);
-        physics_static_body_create((vec2){width - 16, height * 0.5 - 3 * 32}, (vec2){32, height}, COLLISION_LAYER_TERRAIN);
+        physics_static_body_create((vec2){width * 0.5, height - 16}, (vec2){width, 32}, COLLISION_LAYER_TERRAIN);           // Plafond
+        physics_static_body_create((vec2){width * 0.25 - 16, 16}, (vec2){width * 0.5 - 32, 48}, COLLISION_LAYER_TERRAIN);   // Sol gauche
+        physics_static_body_create((vec2){width * 0.75 + 16, 16}, (vec2){width * 0.5 - 32, 48}, COLLISION_LAYER_TERRAIN);   // Sol droite
+        physics_static_body_create((vec2){16, height * 0.5 - 3 * 32}, (vec2){32, height}, COLLISION_LAYER_TERRAIN);         // Mur gauche
+        physics_static_body_create((vec2){width - 16, height * 0.5 - 3 * 32}, (vec2){32, height}, COLLISION_LAYER_TERRAIN); // Mur droite
         physics_static_body_create((vec2){32 + 64, height - 32 * 3 - 16}, (vec2){128, 32}, COLLISION_LAYER_TERRAIN);
         physics_static_body_create((vec2){width - 32 - 64, height - 32 * 3 - 16}, (vec2){128, 32}, COLLISION_LAYER_TERRAIN);
         physics_static_body_create((vec2){width * 0.5, height - 32 * 3 - 16}, (vec2){192, 32}, COLLISION_LAYER_TERRAIN);
-        physics_static_body_create((vec2){width * 0.5, 32 * 3 + 24}, (vec2){448, 32}, COLLISION_LAYER_TERRAIN);
+        physics_static_body_create((vec2){width * 0.5, 32 * 3 + 24}, (vec2){448, 32}, COLLISION_LAYER_TERRAIN);         // Plateforme au centre
         physics_static_body_create((vec2){16, height - 64}, (vec2){32, 64}, COLLISION_LAYER_ENEMY_PASSTHROUGH);         // Spawn ennemis de gauche
         physics_static_body_create((vec2){width - 16, height - 64}, (vec2){32, 64}, COLLISION_LAYER_ENEMY_PASSTHROUGH); // Spawn ennemis de droite
 
@@ -394,7 +485,8 @@ int main(int argc, char *argv[])
     time_init(60);
     SDL_Window *window = render_init();
     config_init();
-    // controller_init();
+    controller_init();
+    mycurl_init(&global.curl_handle);
     physics_init();
     entity_init();
     animation_init();
@@ -414,12 +506,8 @@ int main(int argc, char *argv[])
         audio_sound_load(&SOUND_ENEMY_DEATH, "assets/audio/enemy_death.wav");
         audio_sound_load(&SOUND_PLAYER_DEATH, "assets/audio/player_death.wav");
         audio_sound_load(&SOUND_SHOOT, "assets/audio/shoot.wav");
+        audio_sound_load(&SOUND_FRUIT_COLLECT, "assets/audio/Fruit_collect_1.wav");
     }
-
-    // Initialiser curl
-
-    MyCurlHandle curl_handle;
-    mycurl_init(&curl_handle);
 
     // Initialiser sprites
     {
@@ -431,6 +519,10 @@ int main(int argc, char *argv[])
         render_sprite_sheet_init(&sprite_sheet_enemy_flying, "assets/spritesheets/bat_flying(46x30).png", 46, 30);
         render_sprite_sheet_init(&sprite_sheet_fire, "assets/spritesheets/fire.png", 32, 64);
         render_sprite_sheet_init(&sprite_sheet_props, "assets/spritesheets/props_16x16.png", 16, 16);
+        render_sprite_sheet_init(&sprite_sheet_apple, "assets/spritesheets/Apple.png", 32, 32);
+        render_sprite_sheet_init(&sprite_sheet_banana, "assets/spritesheets/Bananas.png", 32, 32);
+        render_sprite_sheet_init(&sprite_sheet_pineapple, "assets/spritesheets/Pineapple.png", 32, 32);
+        render_sprite_sheet_init(&sprite_sheet_collected, "assets/spritesheets/Collected.png", 32, 32);
     }
 
     // Initialiser animations
@@ -442,19 +534,28 @@ int main(int argc, char *argv[])
         anim_player_idle_id = animation_create(adef_player_idle_id, false);
 
         size_t adef_ennemy_flying_fly_id = animation_definition_create(&sprite_sheet_enemy_flying, 0.1, 0, (u8[]){0, 1, 2, 3, 4, 5, 6}, 7);
-        anim_ennemy_flying_fly_id = animation_create(adef_ennemy_flying_fly_id, true);
         size_t adef_ennemy_small_run_id = animation_definition_create(&sprite_sheet_enemy_small, 0.1, 0, (u8[]){0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13}, 14);
         size_t adef_ennemy_medium_run_id = animation_definition_create(&sprite_sheet_enemy_medium, 0.1, 0, (u8[]){0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11}, 12);
         size_t adef_ennemy_large_run_id = animation_definition_create(&sprite_sheet_enemy_large, 0.1, 0, (u8[]){0, 1, 2, 3, 4, 5}, 6);
         anim_ennemy_small_run_id = animation_create(adef_ennemy_small_run_id, true);
         anim_ennemy_medium_run_id = animation_create(adef_ennemy_medium_run_id, true);
         anim_ennemy_large_run_id = animation_create(adef_ennemy_large_run_id, true);
+        anim_ennemy_flying_fly_id = animation_create(adef_ennemy_flying_fly_id, true);
 
         size_t adef_fire_id = animation_definition_create(&sprite_sheet_fire, 0.1, 0, (u8[]){0, 1, 2, 3, 4, 5, 6}, 7);
         anim_fire_id = animation_create(adef_fire_id, true);
 
         size_t adef_projectile_small_id = animation_definition_create(&sprite_sheet_props, 1, 0, (u8[]){0}, 1);
         anim_projectile_small_id = animation_create(adef_projectile_small_id, false);
+
+        size_t adef_fruit_apple_id = animation_definition_create(&sprite_sheet_apple, 0.1, 0, (u8[]){0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16}, 17);
+        size_t adef_fruit_banana_id = animation_definition_create(&sprite_sheet_banana, 0.1, 0, (u8[]){0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16}, 17);
+        size_t adef_fruit_pineapple_id = animation_definition_create(&sprite_sheet_pineapple, 0.1, 0, (u8[]){0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16}, 17);
+        size_t adef_fruit_collected_id = animation_definition_create(&sprite_sheet_collected, 0.1, 0, (u8[]){0, 1, 2, 3, 4, 5}, 6);
+        anim_fruit_apple_id = animation_create(adef_fruit_apple_id, true);
+        anim_fruit_banana_id = animation_create(adef_fruit_banana_id, true);
+        anim_fruit_pineapple_id = animation_create(adef_fruit_pineapple_id, true);
+        anim_fruit_collected_id = animation_create(adef_fruit_collected_id, false);
     }
 
     // Initialiser armes
@@ -468,6 +569,25 @@ int main(int argc, char *argv[])
             .sprite_size = {16, 16},
             .sprite_offset = {0, 0},
             .sfx = SOUND_SHOOT};
+    }
+
+    // Initialiser fruits
+    {
+        fruits[FRUIT_TYPE_APPLE] = (Fruit){
+            .fruit_animation_id = anim_fruit_apple_id,
+            .sprite_offset = {0, 0},
+            .sprite_size = {32, 32},
+        };
+        fruits[FRUIT_TYPE_BANANA] = (Fruit){
+            .fruit_animation_id = anim_fruit_banana_id,
+            .sprite_offset = {0, 0},
+            .sprite_size = {32, 32},
+        };
+        fruits[FRUIT_TYPE_PINEAPPLE] = (Fruit){
+            .fruit_animation_id = anim_fruit_pineapple_id,
+            .sprite_offset = {0, 0},
+            .sprite_size = {32, 32},
+        };
     }
 
     reset();
@@ -491,7 +611,6 @@ int main(int argc, char *argv[])
             break;
         case GAME_SCREEN:
         {
-
             SDL_Event event;
 
             while (SDL_PollEvent(&event))
@@ -509,7 +628,7 @@ int main(int argc, char *argv[])
                         printf("Test de la route /ping avec une requête GET dans un thread dédié.......\n");
                         // Créer une structure pour stocker les données de la requête
                         CurlRequestData *curlData = malloc(sizeof(CurlRequestData));
-                        curlData->handle = &curl_handle;
+                        curlData->handle = &global.curl_handle;
                         curlData->endpoint = "/ping";
 
                         // Créer un thread pour effectuer la requête
@@ -563,7 +682,7 @@ int main(int argc, char *argv[])
                     bool is_flipped = rand() % 100 >= 50;
 
                     // Utilisation de la nouvelle fonction spawn_enemy avec des probabilités égales
-                    int random_value = rand() % 4;
+                    u8 random_value = rand() % 4;
 
                     switch (random_value)
                     {
@@ -585,6 +704,32 @@ int main(int argc, char *argv[])
 
                     default:
                         ERROR_EXIT("Type d'ennemi non défini.");
+                        break;
+                    }
+                }
+            }
+
+            {
+                if (fruits_count == 0)
+                {
+                    fruits_count++;
+                    u8 random_fruit_value = rand() % 3;
+                    switch (random_fruit_value)
+                    {
+                    case 0:
+                        spawn_fruit(FRUIT_TYPE_APPLE);
+                        break;
+
+                    case 1:
+                        spawn_fruit(FRUIT_TYPE_BANANA);
+                        break;
+
+                    case 2:
+                        spawn_fruit(FRUIT_TYPE_PINEAPPLE);
+                        break;
+
+                    default:
+                        ERROR_EXIT("Type de fruits non défini.");
                         break;
                     }
                 }
@@ -638,6 +783,12 @@ int main(int argc, char *argv[])
                 vec2 pos;
                 vec2_add(pos, body->aabb.position, entity->sprite_offset);
                 animation_render(anim, pos, WHITE, texture_slots);
+                if (entity->entity_type == ENTITY_FX && anim->played)
+                {
+                    // Detruire le FX s'il a finit de jouer son animation
+                    entity->is_active = false;
+                    entity_destroy(i);
+                }
             }
 
             render_textures(texture_slots);
@@ -665,6 +816,6 @@ int main(int argc, char *argv[])
 
         time_update_late();
     }
-
+    mycurl_cleanup(&global.curl_handle);
     return EXIT_SUCCESS;
 }

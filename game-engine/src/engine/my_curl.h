@@ -19,6 +19,16 @@ typedef struct curlRequestData
     const char *endpoint;
 } CurlRequestData;
 
+typedef void (*AsyncCallback)(const char *);
+
+typedef struct
+{
+    MyCurlHandle *handle;
+    const char *endpoint;
+    const char *post_data;
+    AsyncCallback callback_function;
+} CurlPostRequestData;
+
 // Fonction pour initialiser libcurl
 void mycurl_init(MyCurlHandle *handle);
 
@@ -34,3 +44,6 @@ void mycurl_cleanup(MyCurlHandle *handle);
 
 // Faire une requête GET dans un thread séparé
 DWORD WINAPI async_curl_request(LPVOID data);
+
+int mycurl_post_async(MyCurlHandle *handle, const char *endpoint, const char *post_data, AsyncCallback callback_function);
+DWORD WINAPI async_curl_post_request(LPVOID data);
