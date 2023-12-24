@@ -27,7 +27,9 @@ typedef enum
     ENTITY_ENEMY_TYPE_FLYING,
     ENTITY_FIRE,
     ENTITY_PLAYER,
-    ENTITY_PROJECTILE
+    ENTITY_PROJECTILE,
+    ENTITY_FRUIT,
+    ENTITY_FX,
 } Entity_Type;
 
 void entity_init(void);

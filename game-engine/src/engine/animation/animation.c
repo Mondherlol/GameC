@@ -67,6 +67,7 @@ size_t animation_create(size_t animation_definition_id, bool does_loop)
         .animation_definition_id = animation_definition_id,
         .does_loop = does_loop,
         .is_active = true,
+        .played = false,
     };
 
     return id;
@@ -89,6 +90,11 @@ void animation_update(float dt)
     {
         Animation *animation = array_list_get(animation_storage, i);
         Animation_Definition *adef = array_list_get(animation_definition_storage, animation->animation_definition_id);
+
+        // Si l'animation a déjà été jouée, ne rien faire
+        if (animation->played)
+            continue;
+
         animation->current_frame_time -= dt;
 
         if (animation->current_frame_time <= 0)
@@ -105,6 +111,7 @@ void animation_update(float dt)
                 else
                 {
                     animation->current_frame_index -= 1;
+                    animation->played = true; // Marquer l'animation comme jouée une fois qu'elle a atteint la dernière frame
                 }
             }
 
