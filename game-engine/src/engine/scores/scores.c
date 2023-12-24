@@ -133,24 +133,3 @@ Score* GetLocalScores(size_t* count)
 
     return scores;
 }
-//requette post ala base 
-void SendOnlineScore(const char *nom, int score)
-{
-    // Construire les données POST
-    char post_data[256];
-    printf(post_data, sizeof(post_data), "nom=%s&score=%d", nom, score);
-
-    // Initialiser la structure MyCurlHandle
-    MyCurlHandle handle;
-    mycurl_init(&handle);
-
-    // Effectuer la requête POST
-    if (mycurl_post(&handle, "/game/sendscore", post_data) != 0)
-    {
-        printf(stderr, "Erreur lors de l'envoi du score en ligne.\n");
-        // Gérer l'erreur selon les besoins
-    }
-
-    // Nettoyer la structure MyCurlHandle
-    mycurl_cleanup(&handle);
-}

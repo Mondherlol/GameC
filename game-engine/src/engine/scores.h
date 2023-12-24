@@ -23,5 +23,3 @@ bool Score_load(void);
 void local_score_init(void);
 // Retourne un tableau de structure Score contenant les scores locaux
 Score* GetLocalScores(size_t* count);
-//requette post ala base 
-void SendOnlineScore(const char *nom, int score);
