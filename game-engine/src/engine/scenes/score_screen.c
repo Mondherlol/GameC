@@ -8,59 +8,59 @@
 #include "../scores.h"
 
 Image menuImage;
-
 u8 score_screen_texture_slots[16] = {0};
 
-
-//Pour stocker les struc scores, declaration d'un pointeur 
 Score *localscores;
 Score *onlinescores;
 
-//Pour stocker le nombre de scores
-size_t count;
-size_t online_count;
+size_t local_scores_count;
+size_t online_scores_count;
+
+CurlRequestScoresData *curlData;
 
 void score_init()
 {
     init_image(&menuImage, "assets/menu/Scores.png");
     local_score_init();
-    // WriteLocalScore("sarra",362505);
 }
 
-void score_reset(){
-    localscores = GetLocalScores(&count);
-        
+void score_reset()
+{
+    free(localscores);
+    free(onlinescores);
+    free(curlData);
+    localscores = GetLocalScores(&local_scores_count);
+
     if (localscores != NULL)
     {
-        for (size_t i = 0; i < count; i++)
+        for (size_t i = 0; i < local_scores_count; i++)
         {
             char text[50];
             snprintf(text, sizeof(text), "%s: %d", localscores[i].nom, localscores[i].score);
-           
-            printf("%s\n", text);  
-        }
 
-      
-        free(localscores);
+            printf("%s\n", text);
+        }
     }
 
+    onlinescores = malloc(6 * sizeof(Score));
 
-    printf("Test de la route /scores avec une requête GET dans un thread dédié.......\n");
+    if (onlinescores == NULL)
+        ERROR_EXIT("Erreur d'allocation de mémoire pour onlinescores\n");
+
     // Créer une structure pour stocker les données de la requête
-    CurlRequestData *curlData = malloc(sizeof(CurlRequestData));
-    curlData->handle = &global.curl_handle;
-    curlData->endpoint = "/scores?limit=8";
-    // Créer un thread pour effectuer la requête
-    HANDLE thread = CreateThread(NULL, 0, async_curl_request, curlData, 0, NULL);
-    CloseHandle(thread); // Fermer le handle du thread pour libérer ses ressources lorsqu'il a terminé
+    curlData = malloc(sizeof(CurlRequestData));
 
+    curlData->onlinescores = onlinescores;
+
+    // Créer un thread pour effectuer la requête CURL
+    HANDLE thread = CreateThread(NULL, 0, async_get_online_scores, curlData, 0, NULL);
+
+    // Fermer le handle du thread pour libérer ses ressources
+    CloseHandle(thread);
 }
-
 
 void display_score(SDL_Window *window)
 {
-
-    // initiation du rendu
     render_begin();
 
     render_image(&menuImage,
@@ -77,7 +77,6 @@ void display_score(SDL_Window *window)
         case SDL_KEYDOWN:
             if (menuEvent.key.keysym.scancode == SDL_SCANCODE_ESCAPE)
             {
-                // Code à exécuter lorsque la touche Échap est enfoncée
                 global.current_screen = MENU_SCREEN;
             }
             break;
@@ -88,15 +87,42 @@ void display_score(SDL_Window *window)
 
     render_textures(score_screen_texture_slots);
 
-   // afficher le contenu du tab 
-    for (size_t i = 0; i < count; i++)
+    if (localscores != NULL)
     {
-        char text[50];
-        snprintf(text, sizeof(text), "%s: %d", localscores[i].nom, localscores[i].score);
-        
-        render_text(text, 175, render_height * (0.4 + i * 0.1), WHITE, 1);
+        for (size_t i = 0; i < local_scores_count; i++)
+        {
+            char text[50];
+            snprintf(text, sizeof(text), "%s   %d", localscores[i].nom, localscores[i].score);
+
+            render_text(text, 50, render_height * (0.6 - i * 0.1), WHITE, 0);
+        }
+    }
+    else
+    {
+        render_text("Pas de score local ", 50, render_height * (0.5), WHITE, 0);
+    }
+
+    if (onlinescores[0].score != 0)
+    {
+        for (size_t i = 0; i < 6; i++)
+        {
+            char text[50];
+            snprintf(text, sizeof(text), "%s   %d", onlinescores[i].nom, onlinescores[i].score);
+
+            render_text(text, render_width / 2 + 50, render_height * (0.60 - i * 0.1), WHITE, 0);
+        }
+    }
+    else
+    {
+        render_text("Pas de connexion", render_width / 2 + 50, render_height * (0.5), WHITE, 0);
     }
 
     render_end(window);
 }
 
+void score_screen_end()
+{
+    free(localscores);
+    free(onlinescores);
+    free(curlData);
+}

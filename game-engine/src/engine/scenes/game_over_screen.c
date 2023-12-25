@@ -7,6 +7,7 @@
 #include "../global.h"
 #include "../my_curl.h"
 #include "../entity.h"
+#include "../scores.h"
 
 float debug_pos_x = 50;
 float debug_pos_y = 50;
@@ -60,6 +61,7 @@ void handle_post_response(const char *response)
 
 void save_high_score(int score)
 {
+    // Sauvegarder le score sur le serveur
     printf("Sauvegarde du high score dans un tread dédié ...\n");
     // Construire l'URL avec le nom d'utilisateur et le score
     char endpoint[256];
@@ -70,6 +72,9 @@ void save_high_score(int score)
     {
         fprintf(stderr, "Erreur lors de l'appel de mycurl_post_async\n");
     }
+
+    // Sauvegarder le score en local
+    WriteLocalScore(global.username, score);
 }
 
 void show_game_over(int score, u8 ennemy)
