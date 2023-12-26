@@ -495,6 +495,7 @@ int main(int argc, char *argv[])
     config_init();
     controller_init();
     mycurl_init(&global.curl_handle);
+    mycurl_init(&global.post_curl_handle);
     physics_init();
     entity_init();
     animation_init();
@@ -502,7 +503,7 @@ int main(int argc, char *argv[])
     audio_init();
     scenes_init();
     score_init();
-  
+
     SDL_ShowCursor(false); // Cacher le curseur
 
     // Initialiser audios
@@ -833,5 +834,8 @@ int main(int argc, char *argv[])
         time_update_late();
     }
     mycurl_cleanup(&global.curl_handle);
+    mycurl_cleanup(&global.post_curl_handle);
+
+    scenes_end();
     return EXIT_SUCCESS;
 }

@@ -29,6 +29,7 @@ typedef struct global
     char generated_code[8]; // Code de la partie
     char username[6];
     MyCurlHandle curl_handle;
+    MyCurlHandle post_curl_handle;
 
 } Global;
 
