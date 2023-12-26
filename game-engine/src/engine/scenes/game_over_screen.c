@@ -95,13 +95,46 @@ void show_game_over(int score, u8 ennemy)
     global.current_screen = GAME_OVER_SCREEN;
 }
 
+#define SELECTION_DELAY 200 // Ajoutez cette constante pour définir la durée de la pause en millisecondes
+
+static u32 lastSelectionTime = 0; // Ajoutez cette variable pour stocker le temps du dernier changement de sélection
+static void game_over_input_handle()
+{
+    Uint32 currentTime = SDL_GetTicks(); // Obtenez le temps actuel en millisecondes
+
+    // Vérifiez si la durée depuis le dernier changement de sélection est supérieure à la pause définie
+    if (currentTime - lastSelectionTime >= SELECTION_DELAY)
+    {
+        if (global.input.up || global.input.up_controller || global.input.joystick_up_controller)
+        {
+            currentButtonSelection = (currentButtonSelection - 1 + GAME_OVER_MENU_ITEMS_COUNT) % GAME_OVER_MENU_ITEMS_COUNT;
+            lastSelectionTime = currentTime; // Mettez à jour le temps du dernier changement de sélection
+        }
+
+        if (global.input.down || global.input.down_controller || global.input.joystick_down_controller)
+        {
+            currentButtonSelection = (currentButtonSelection + 1) % GAME_OVER_MENU_ITEMS_COUNT;
+            lastSelectionTime = currentTime; // Mettez à jour le temps du dernier changement de sélection
+        }
+    }
+    if (global.input.confirm_controller)
+    {
+        switch (currentButtonSelection)
+        {
+        case 0:
+            global.current_screen = GAME_SCREEN;
+            break;
+        case 1:
+            global.current_screen = MENU_SCREEN;
+            break;
+        }
+    }
+}
+
 void display_game_over(SDL_Window *window)
 {
     // initiation du rendu
     render_begin();
-
-    // mise a jour de l'entree de lutilisateur
-    // input_update();
 
     render_image(isNewHighScore ? &gameOverNewScoreImages[currentButtonSelection] : &gameOverImages[currentButtonSelection],
                  (vec2){0, 0},                                                                                                                                  // position
@@ -117,14 +150,6 @@ void display_game_over(SDL_Window *window)
         case SDL_KEYDOWN:
             switch (menuEvent.key.keysym.sym)
             {
-
-            case SDLK_UP:
-                // Changer la sélection vers l'image précédente
-                currentButtonSelection = (currentButtonSelection - 1 + GAME_OVER_MENU_ITEMS_COUNT) % GAME_OVER_MENU_ITEMS_COUNT;
-                break;
-            case SDLK_DOWN:
-                currentButtonSelection = (currentButtonSelection + 1) % GAME_OVER_MENU_ITEMS_COUNT;
-                break;
             case SDLK_RETURN:
                 // Gérer la sélection en fonction de currentButtonSelection
                 switch (currentButtonSelection)

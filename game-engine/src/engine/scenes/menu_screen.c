@@ -52,6 +52,46 @@ void menu_init()
     printf(" CODE GENERER = %s", global.generated_code);
 }
 
+#define SELECTION_DELAY 200 // Ajoutez cette constante pour définir la durée de la pause en millisecondes
+
+static u32 lastSelectionTime = 0; // Ajoutez cette variable pour stocker le temps du dernier changement de sélection
+static void menu_input_handle()
+{
+    Uint32 currentTime = SDL_GetTicks(); // Obtenez le temps actuel en millisecondes
+
+    // Vérifiez si la durée depuis le dernier changement de sélection est supérieure à la pause définie
+    if (currentTime - lastSelectionTime >= SELECTION_DELAY)
+    {
+        if (global.input.up || global.input.up_controller || global.input.joystick_up_controller)
+        {
+            currentSelection = (currentSelection - 1 + MENU_ITEMS_COUNT) % MENU_ITEMS_COUNT;
+            lastSelectionTime = currentTime; // Mettez à jour le temps du dernier changement de sélection
+        }
+
+        if (global.input.down || global.input.down_controller || global.input.joystick_down_controller)
+        {
+            currentSelection = (currentSelection + 1) % MENU_ITEMS_COUNT;
+            lastSelectionTime = currentTime; // Mettez à jour le temps du dernier changement de sélection
+        }
+    }
+    if (global.input.confirm_controller)
+    {
+        // Gérer la sélection en fonction de currentSelection
+        switch (currentSelection)
+        {
+        case 0:
+            global.current_screen = GAME_SCREEN;
+            break;
+        case 1:
+            global.current_screen = SCORE_SCREEN;
+            score_reset();
+            break;
+        case 2:
+            global.should_quit = true; // Quitter le jeu
+            break;
+        }
+    }
+}
 void display_menu(SDL_Window *window)
 {
 
@@ -68,6 +108,8 @@ void display_menu(SDL_Window *window)
                  (vec2){username_background.width / render_get_scale(), username_background.height / render_get_scale()},
                  texture_slots);
 
+    menu_input_handle();
+
     if (global.current_screen == MENU_SCREEN)
     {
         SDL_Event menuEvent;
@@ -80,17 +122,14 @@ void display_menu(SDL_Window *window)
             case SDL_QUIT:
                 global.should_quit = true;
                 break;
+            case SDL_JOYBUTTONDOWN:
+                // Bouton de la manette enfoncé
+                int buttonIndex = menuEvent.jbutton.button;
+                printf(" Bouton %d appuyer", buttonIndex);
+                break;
             case SDL_KEYDOWN:
                 switch (menuEvent.key.keysym.sym)
                 {
-
-                case SDLK_UP:
-                    // Changer la sélection vers l'image précédente
-                    currentSelection = (currentSelection - 1 + MENU_ITEMS_COUNT) % MENU_ITEMS_COUNT;
-                    break;
-                case SDLK_DOWN:
-                    currentSelection = (currentSelection + 1) % MENU_ITEMS_COUNT;
-                    break;
                 case SDLK_p:
                     global.current_screen = USERNAME_MENU_SCREEN;
 

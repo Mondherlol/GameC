@@ -4,12 +4,17 @@
 #include "../util.h"
 
 #define JOYSTICK_AXIS_LEFT_RIGHT 0
+#define JOYSTICK_AXIS_UP_DOWN 1
 #define JOYSTICK_DEADZONE 8000 // Zone morte du joystick
+#define JOYSTICK_BUTTON_UP 11
+#define JOYSTICK_BUTTON_DOWN 12
 #define JOYSTICK_BUTTON_LEFT 13
 #define JOYSTICK_BUTTON_RIGHT 14
 #define JOYSTICK_BUTTON_JUMP 1
-#define JOYSTICK_BUTTON_SHOOT 2
+#define JOYSTICK_BUTTON_SHOOT 3
 #define JOYSTICK_BUTTON_START 6
+#define JOYSTICK_BUTTON_BACK 3
+#define JOYSTICK_BUTTON_CONFIRM 1
 
 // Gérer l'état des touches pressées
 static void update_key_state(u8 current_state, Key_State *key_state)
@@ -50,13 +55,21 @@ void input_update()
             // Joystick de gauche
             update_key_state(SDL_JoystickGetAxis(joystick, JOYSTICK_AXIS_LEFT_RIGHT) < -JOYSTICK_DEADZONE, &global.input.joystick_left_controller);
             update_key_state(SDL_JoystickGetAxis(joystick, JOYSTICK_AXIS_LEFT_RIGHT) > JOYSTICK_DEADZONE, &global.input.joystick_right_controller);
+
+            update_key_state(SDL_JoystickGetAxis(joystick, JOYSTICK_AXIS_UP_DOWN) < -JOYSTICK_DEADZONE, &global.input.joystick_up_controller);
+            update_key_state(SDL_JoystickGetAxis(joystick, JOYSTICK_AXIS_UP_DOWN) > JOYSTICK_DEADZONE, &global.input.joystick_down_controller);
+
             // Les boutons directionnels
             update_key_state(SDL_JoystickGetButton(joystick, JOYSTICK_BUTTON_LEFT), &global.input.left_controller);
             update_key_state(SDL_JoystickGetButton(joystick, JOYSTICK_BUTTON_RIGHT), &global.input.right_controller);
+            update_key_state(SDL_JoystickGetButton(joystick, JOYSTICK_BUTTON_UP), &global.input.up_controller);
+            update_key_state(SDL_JoystickGetButton(joystick, JOYSTICK_BUTTON_DOWN), &global.input.down_controller);
             // Le reste
             update_key_state(SDL_JoystickGetButton(joystick, JOYSTICK_BUTTON_JUMP), &global.input.jump_controller);
             update_key_state(SDL_JoystickGetButton(joystick, JOYSTICK_BUTTON_START), &global.input.start_controller);
             update_key_state(SDL_JoystickGetButton(joystick, JOYSTICK_BUTTON_SHOOT), &global.input.shoot_controller);
+            update_key_state(SDL_JoystickGetButton(joystick, JOYSTICK_BUTTON_BACK), &global.input.back_controller);
+            update_key_state(SDL_JoystickGetButton(joystick, JOYSTICK_BUTTON_CONFIRM), &global.input.confirm_controller);
 
             SDL_JoystickClose(joystick);
         }
