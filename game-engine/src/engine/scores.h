@@ -25,11 +25,6 @@ typedef struct
 // Crée un fichier dans le dossier du jeu avec tous  les scores locaux
 void WriteLocalScore(const char *nom, int score);
 
-// Retourne true si la lecture des scores est réussie, false sinon
-bool Score_load(void);
-
-// Fonction d'initialisation des scores
-void local_score_init(void);
 // Retourne un tableau de structure Score contenant les scores locaux
 Score *GetLocalScores(size_t *count);
 

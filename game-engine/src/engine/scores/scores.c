@@ -12,43 +12,6 @@
 
 #define SCORE_FILE_PATH "./scores.txt"
 
-const static char *SCORE_DEFAULT = "sarra:60000\nmondher:2000000\n";
-
-// Fonction pour charger le fichier de scores
-bool Score_load(void)
-{
-    File file_score = io_file_read(SCORE_FILE_PATH);
-    if (!file_score.is_valid)
-        return false;
-
-    printf("Fichier des scores :\n%s", file_score.data);
-
-    free(file_score.data);
-
-    return true;
-}
-
-// Fonction d'initialisation des scores
-void local_score_init(void)
-{
-    if (Score_load())
-    {
-        printf("Scores déjà initialisés.\n");
-        return;
-    }
-
-    // io_file_append((void *)SCORE_DEFAULT, strlen(SCORE_DEFAULT), SCORE_FILE_PATH);
-
-    if (Score_load())
-    {
-        printf("Initialisation des scores réussie.\n");
-    }
-    else
-    {
-        fprintf(stderr, "Impossible de charger ou créer scores.txt.\n");
-    }
-}
-
 // Crée un fichier dans le dossier du jeu avec tous les scores locaux
 void WriteLocalScore(const char *nom, int score)
 {
