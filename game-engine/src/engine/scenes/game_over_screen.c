@@ -148,6 +148,8 @@ void display_game_over(SDL_Window *window)
 
     SDL_Event menuEvent;
 
+    game_over_input_handle();
+
     while (SDL_PollEvent(&menuEvent))
     {
         switch (menuEvent.type)
