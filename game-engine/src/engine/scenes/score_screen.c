@@ -21,7 +21,6 @@ CurlRequestScoresData *curlData;
 void score_init()
 {
     init_image(&menuImage, "assets/menu/Scores.png");
-    local_score_init();
 }
 
 void score_reset()
