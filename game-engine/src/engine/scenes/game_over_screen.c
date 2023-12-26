@@ -25,7 +25,7 @@ Image gameOverImages[GAME_OVER_MENU_ITEMS_COUNT];
 Image gameOverNewScoreImages[GAME_OVER_MENU_ITEMS_COUNT];
 Image ennemiesImages[ENNEMY_COUNT];
 int currentButtonSelection = 0;
-int highScore = 3;
+int highScore = 0;
 
 u8 game_over_texture_slots[16] = {0};
 bool isNewHighScore = false;
@@ -41,7 +41,7 @@ const char *post_data = ""; // Remplacez ceci par les données POST réelles si 
 
 void game_over_init()
 {
-    audio_sound_load(&SOUND_SELECTED_BUTTON,"assets/audio/Select 1.wav");
+    audio_sound_load(&SOUND_SELECTED_BUTTON, "assets/audio/Select 1.wav");
 
     width = global.window_width / render_get_scale();
     height = global.window_height / render_get_scale();
@@ -67,6 +67,7 @@ void handle_post_response(const char *response)
 
 void save_high_score(int score)
 {
+    WriteLocalScore(global.username, score);
     // Sauvegarder le score sur le serveur
     printf("Sauvegarde du high score dans un tread dédié ...\n");
     // Construire l'URL avec le nom d'utilisateur et le score
@@ -202,7 +203,7 @@ void display_game_over(SDL_Window *window)
 
     // Meilleur score
     render_text(highScoreText, 50, height * 0.36, YELLOW, 1);
-    render_text(playerKiller, 75, height * 0.31, WHITE, 1);
+    render_text(global.username, 75, height * 0.31, WHITE, 1);
 
     render_end(window);
 }
