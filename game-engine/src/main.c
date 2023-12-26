@@ -479,7 +479,7 @@ static void input_handle(Body *body_player)
     body_player->velocity[0] = velx;
     body_player->velocity[1] = vely;
 
-    if (global.input.shoot && shoot_timer <= 0)
+    if ((global.input.shoot || global.input.shoot_controller) && shoot_timer <= 0)
     {
         Weapon weapon = weapons[weapon_type];
         shoot_timer = weapon.fire_rate;
@@ -612,6 +612,8 @@ int main(int argc, char *argv[])
     while (!global.should_quit)
     {
         time_update();
+        input_update();
+
         switch (global.current_screen)
         {
         case MENU_SCREEN:
@@ -683,7 +685,6 @@ int main(int argc, char *argv[])
             else
                 player->animation_id = anim_player_idle_id;
 
-            input_update();
             input_handle(body_player);
             physics_update();
 

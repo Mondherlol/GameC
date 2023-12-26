@@ -15,6 +15,7 @@ static const char *CONFIG_DEFAULT =
     "right = RIGHT\n"
     "shoot = X\n"
     "escape = Escape\n"
+    "confirm = A\n "
     "\n";
 
 static char tmp_buffer[20] = {0};
@@ -53,8 +54,9 @@ static void load_controls(const char *config_buffer)
     config_key_bind(INPUT_KEY_RIGHT, config_get_value(config_buffer, "right"));
     config_key_bind(INPUT_KEY_UP, config_get_value(config_buffer, "up"));
     config_key_bind(INPUT_KEY_DOWN, config_get_value(config_buffer, "down"));
-    config_key_bind(INPUT_KEY_SHOOT, config_get_value(config_buffer, "shoot"));
     config_key_bind(INPUT_KEY_ESCAPE, config_get_value(config_buffer, "escape"));
+    config_key_bind(INPUT_KEY_SHOOT, config_get_value(config_buffer, "shoot"));
+    // config_key_bind(INPUT_KEY_CONFIRM, config_get_value(config_buffer, "confirm"));
 }
 static void load_username(const char *config_buffer)
 {
@@ -72,10 +74,9 @@ static int config_load(void)
 {
     File file_config = io_file_read("./config.ini");
     if (!file_config.is_valid)
-        return 1;//erreur
+        return 1; // erreur
 
-
-    //lier les touches avec le fichier config.ini
+    // lier les touches avec le fichier config.ini
     load_controls(file_config.data);
     load_username(file_config.data);
     free(file_config.data);
@@ -86,7 +87,7 @@ static int config_load(void)
 //
 void config_init(void)
 {
-    //il a resussi a louvrir et lire les donnnees 
+    // il a resussi a louvrir et lire les donnnees
     if (config_load() == 0)
         return;
 

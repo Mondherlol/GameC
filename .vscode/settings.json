@@ -72,7 +72,8 @@
     "config.h": "c",
     "entity.h": "c",
     "array_list.h": "c",
-    "animation.h": "c"
+    "animation.h": "c",
+    "util.h": "c"
   },
   "C_Cpp.errorSquiggles": "disabled"
 }
