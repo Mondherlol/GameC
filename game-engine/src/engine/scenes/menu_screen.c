@@ -5,11 +5,14 @@
 #include "../util.h"
 #include "../global.h"
 #include "../my_curl.h"
+#include "../audio.h"
 
 float debug_menu_pos_x = 50;
 float debug_menu_pos_y = 50;
 
 #define MENU_ITEMS_COUNT 3
+
+static Mix_Chunk *SOUND_SELECTED_BUTTON;
 
 // tab pour stocker les images
 Image menuImages[MENU_ITEMS_COUNT];
@@ -23,6 +26,8 @@ u8 texture_slots[16] = {0};
 float width;
 float height;
 
+
+
 void debug_username_menu()
 {
     render_begin();
@@ -34,6 +39,7 @@ void debug_username_menu()
 }
 void menu_init()
 {
+    audio_sound_load(&SOUND_SELECTED_BUTTON,"assets/audio/Select 1.wav");
 
     init_image(&menuImages[0], "assets/menu/1menu_selected_play.png");
     init_image(&menuImages[1], "assets/menu/2menu_selected_scores.png");
@@ -50,6 +56,7 @@ void menu_init()
     };
 
     printf(" CODE GENERER = %s", global.generated_code);
+
 }
 
 void display_menu(SDL_Window *window)
@@ -87,13 +94,15 @@ void display_menu(SDL_Window *window)
                 case SDLK_UP:
                     // Changer la sélection vers l'image précédente
                     currentSelection = (currentSelection - 1 + MENU_ITEMS_COUNT) % MENU_ITEMS_COUNT;
+                    audio_sound_play(SOUND_SELECTED_BUTTON);
                     break;
                 case SDLK_DOWN:
                     currentSelection = (currentSelection + 1) % MENU_ITEMS_COUNT;
+                    audio_sound_play(SOUND_SELECTED_BUTTON);
                     break;
                 case SDLK_p:
                     global.current_screen = USERNAME_MENU_SCREEN;
-
+                    audio_sound_play(SOUND_SELECTED_BUTTON);
                     break;
                 case SDLK_RETURN:
                     // Gérer la sélection en fonction de currentSelection

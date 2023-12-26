@@ -52,3 +52,8 @@ void audio_music_play(Mix_Music *music)
 {
 	Mix_PlayMusic(music, -1);
 }
+
+void audio_music_stop(void)
+{
+    Mix_HaltMusic();
+}

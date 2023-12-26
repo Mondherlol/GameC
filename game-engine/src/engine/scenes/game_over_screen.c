@@ -7,12 +7,15 @@
 #include "../global.h"
 #include "../my_curl.h"
 #include "../entity.h"
+#include "../audio.h"
 
 float debug_pos_x = 50;
 float debug_pos_y = 50;
 
 #define GAME_OVER_MENU_ITEMS_COUNT 2
 #define ENNEMY_COUNT 5
+
+static Mix_Chunk *SOUND_SELECTED_BUTTON;
 
 float width;
 float height;
@@ -31,11 +34,14 @@ static char scoreText[20];
 static char highScoreText[20];
 
 // Endpoint et données POST
+
 const char *endpoint = "/scores/test/10000";
 const char *post_data = ""; // Remplacez ceci par les données POST réelles si nécessaire
 
 void game_over_init()
 {
+    audio_sound_load(&SOUND_SELECTED_BUTTON,"assets/audio/Select 1.wav");
+
     width = global.window_width / render_get_scale();
     height = global.window_height / render_get_scale();
 
@@ -70,6 +76,7 @@ void save_high_score(int score)
     {
         fprintf(stderr, "Erreur lors de l'appel de mycurl_post_async\n");
     }
+
 }
 
 void show_game_over(int score, u8 ennemy)
@@ -116,9 +123,11 @@ void display_game_over(SDL_Window *window)
             case SDLK_UP:
                 // Changer la sélection vers l'image précédente
                 currentButtonSelection = (currentButtonSelection - 1 + GAME_OVER_MENU_ITEMS_COUNT) % GAME_OVER_MENU_ITEMS_COUNT;
+                audio_sound_play(SOUND_SELECTED_BUTTON);
                 break;
             case SDLK_DOWN:
                 currentButtonSelection = (currentButtonSelection + 1) % GAME_OVER_MENU_ITEMS_COUNT;
+                audio_sound_play(SOUND_SELECTED_BUTTON);
                 break;
             case SDLK_RETURN:
                 // Gérer la sélection en fonction de currentButtonSelection
