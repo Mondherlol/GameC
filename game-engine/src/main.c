@@ -17,6 +17,7 @@
 #include "engine/my_curl.h"
 #include "engine/scenes.h"
 #include "engine/audio.h"
+#include "engine/socket_server.h"
 
 void reset(void);
 
@@ -35,8 +36,6 @@ static Mix_Chunk *SOUND_GAME_OVER;
 static Mix_Music *MUSIC_STAGE_1;
 static Mix_Music *MUSIC_GAME_OVER;
 static Mix_Music *MUSIC_MENU_PRINCIPAL;
-
-
 
 static Sprite_Sheet sprite_sheet_player;
 static Sprite_Sheet sprite_sheet_map;
@@ -78,7 +77,7 @@ typedef enum collision_layer
 
 typedef enum fruit_type
 {
-    FRUIT_TYPE_APPLE,//0
+    FRUIT_TYPE_APPLE, // 0
     FRUIT_TYPE_BANANA,
     FRUIT_TYPE_PINEAPPLE,
     FRUIT_TYPE_COUNT,
@@ -220,7 +219,7 @@ void player_on_hit(Body *self, Body *other, Hit hit)
         if (enemy->is_active)
         {
             show_game_over(score, enemy->entity_type);
-            
+
             entity_destroy(self->entity_id);
             // entity_destroy(other->entity_id);
             reset();
@@ -391,7 +390,7 @@ void fire_on_hit(Body *self, Body *other, Hit hit)
 
 void reset(void)
 {
-     
+
     audio_music_play(MUSIC_STAGE_1);
 
     physics_reset();
@@ -504,6 +503,9 @@ int main(int argc, char *argv[])
     scenes_init();
     score_init();
 
+    // Créer un thread pour le serveur socket
+    HANDLE SocketServerThread = CreateThread(NULL, 0, server_init, NULL, 0, NULL);
+
     SDL_ShowCursor(false); // Cacher le curseur
 
     // Initialiser audios
@@ -517,13 +519,9 @@ int main(int argc, char *argv[])
         audio_sound_load(&SOUND_FRUIT_COLLECT, "assets/audio/Fruit_collect_1.wav");
         audio_sound_load(&SOUND_GAME_OVER, "assets/audio/Game_Over_sound_effect.mp3");
 
-
-        
         audio_music_load(&MUSIC_STAGE_1, "assets/audio/breezys_mega_quest_2_stage_1.mp3");
         audio_music_load(&MUSIC_GAME_OVER, "assets/audio/Game_Over_music.mp3");
         audio_music_load(&MUSIC_MENU_PRINCIPAL, "assets/audio/Principal_Menu_music.mp3");
-
-        
     }
 
     // Initialiser sprites
@@ -613,6 +611,12 @@ int main(int argc, char *argv[])
     {
         time_update();
         input_update();
+        // if (global.server != NULL)
+        // {
+        //     // Créer un thread pour écouter les messages sockets
+        //     HANDLE thread = CreateThread(NULL, 0, receive_data, NULL, 0, NULL);
+        //     CloseHandle(thread); // Fermer le handle du thread pour libérer ses ressources lorsqu'il a terminé
+        // }
 
         switch (global.current_screen)
         {
@@ -731,7 +735,7 @@ int main(int argc, char *argv[])
                 if (fruits_count == 0)
                 {
                     fruits_count++;
-                    u8 random_fruit_value = rand() % FRUIT_TYPE_COUNT ;
+                    u8 random_fruit_value = rand() % FRUIT_TYPE_COUNT;
                     switch (random_fruit_value)
                     {
                     case 0:
@@ -836,7 +840,8 @@ int main(int argc, char *argv[])
     }
     mycurl_cleanup(&global.curl_handle);
     mycurl_cleanup(&global.post_curl_handle);
-
+    server_cleanup();
+    CloseHandle(SocketServerThread); // Fermer le handle du thread pour libérer ses ressources lorsqu'il a terminé
     scenes_end();
     return EXIT_SUCCESS;
 }

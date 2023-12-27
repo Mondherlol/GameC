@@ -26,8 +26,6 @@ u8 texture_slots[16] = {0};
 float width;
 float height;
 
-
-
 void debug_username_menu()
 {
     render_begin();
@@ -39,7 +37,7 @@ void debug_username_menu()
 }
 void menu_init()
 {
-    audio_sound_load(&SOUND_SELECTED_BUTTON,"assets/audio/Select 1.wav");
+    audio_sound_load(&SOUND_SELECTED_BUTTON, "assets/audio/Select 1.wav");
 
     init_image(&menuImages[0], "assets/menu/1menu_selected_play.png");
     init_image(&menuImages[1], "assets/menu/2menu_selected_scores.png");
@@ -50,13 +48,7 @@ void menu_init()
 
     height = global.window_height / render_get_scale();
 
-    if (genererate_code(&global.curl_handle) != 0)
-    {
-        fprintf(stderr, "La requête pour generer le code a echouer.\n");
-    };
-
-    printf(" CODE GENERER = %s", global.generated_code);
-
+    strcpy(global.generated_code, "");
 }
 
 #define SELECTION_DELAY 200 // Ajoutez cette constante pour définir la durée de la pause en millisecondes

@@ -34,7 +34,6 @@ void mycurl_init(MyCurlHandle *handle);
 
 // Fonction pour effectuer une requête GET
 int mycurl_get(MyCurlHandle *handle, const char *endpoint);
-int genererate_code(MyCurlHandle *handle);
 
 // Fonction pour effectuer une requête POST avec des données
 int mycurl_post(MyCurlHandle *handle, const char *endpoint, const char *post_data);

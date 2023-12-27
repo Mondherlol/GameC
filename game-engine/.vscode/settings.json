@@ -1,6 +1,13 @@
 {
     "files.associations": {
         "*.ejs": "html",
-        "time.h": "c"
+        "time.h": "c",
+        "socket_server.h": "c",
+        "input.h": "c",
+        "render.h": "c",
+        "stdio.h": "c",
+        "util.h": "c",
+        "stdbool.h": "c",
+        "my_curl.h": "c"
     }
 }

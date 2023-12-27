@@ -42,6 +42,7 @@ void score_reset()
     }
 
     onlinescores = malloc(6 * sizeof(Score));
+    onlinescores[0].score = 0;
 
     if (onlinescores == NULL)
         ERROR_EXIT("Erreur d'allocation de mémoire pour onlinescores\n");
@@ -101,7 +102,7 @@ void display_score(SDL_Window *window)
         render_text("Pas de score local ", 50, render_height * (0.5), WHITE, 0);
     }
 
-    if (onlinescores[0].score != 0)
+    if (onlinescores != NULL && onlinescores[0].score != 0)
     {
         for (size_t i = 0; i < 6; i++)
         {

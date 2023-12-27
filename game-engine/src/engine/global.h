@@ -1,10 +1,12 @@
 #pragma once
 
+#include <stdbool.h>
+
+#include "socket_server.h"
 #include "render.h"
 #include "config.h"
 #include "input.h"
 #include "time.h"
-#include <stdbool.h>
 #include "types.h"
 #include "my_curl.h"
 
@@ -30,7 +32,7 @@ typedef struct global
     char username[6];
     MyCurlHandle curl_handle;
     MyCurlHandle post_curl_handle;
-
+    SocketServer *server;
 } Global;
 
 extern Global global;
