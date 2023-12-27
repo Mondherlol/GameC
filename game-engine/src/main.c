@@ -491,33 +491,34 @@ static void input_handle(Body *body_player)
     // Gère les entrées pour déplacer le joueur
     if (global.input.right || global.input.right_controller || global.input.joystick_right_controller)
     {
-        velx += SPEED_PLAYER;
-        walk_anim->is_flipped = false;
-        idle_anim->is_flipped = false;
+        velx += SPEED_PLAYER;// Incrémente la vélocité horizontale à droite
+        walk_anim->is_flipped = false;// Définit l'animation de marche comme non inversée
+        idle_anim->is_flipped = false;// Définit l'animation immobile comme non inversée
     }
 
     if (global.input.left || global.input.left_controller || global.input.joystick_left_controller)
     {
-        velx -= SPEED_PLAYER;
-        walk_anim->is_flipped = true;
-        idle_anim->is_flipped = true;
+        velx -= SPEED_PLAYER;// Décrémente la vélocité horizontale à gauche
+        walk_anim->is_flipped = true;// Définit l'animation de marche comme inversée
+        idle_anim->is_flipped = true;// Définit l'animation immobile comme inversée
     }
 
     if ((global.input.up || global.input.jump_controller) && player_is_grounded)
     {
-        player_is_grounded = false;
-        vely = JUMP_VELOCITY;
-        audio_sound_play(SOUND_JUMP);
+        player_is_grounded = false;// Indique que le joueur n'est plus au sol
+        vely = JUMP_VELOCITY;// Ajuste la vélocité verticale pour effectuer un saut
+        audio_sound_play(SOUND_JUMP);// Joue l'effet sonore du saut
+
     }
 
-    body_player->velocity[0] = velx;
-    body_player->velocity[1] = vely;
+    body_player->velocity[0] = velx;// Affecte la vélocité horizontale au corps du joueur
+    body_player->velocity[1] = vely; // Affecte la vélocité verticale au corps du joueur
 
     if ((global.input.shoot || global.input.shoot_controller) && shoot_timer <= 0)
     {
-        Weapon weapon = weapons[weapon_type];
-        shoot_timer = weapon.fire_rate;
-        spawn_projectile(weapon.projectile_type);
+        Weapon weapon = weapons[weapon_type];// Obtient l'arme actuelle du joueur
+        shoot_timer = weapon.fire_rate;// Réinitialise le temps de tir
+        spawn_projectile(weapon.projectile_type);// Crée un projectile en fonction du type d'arme
     }
 }
 
