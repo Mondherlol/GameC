@@ -19,10 +19,10 @@
 #include "engine/audio.h"
 
 void reset(void);
-
+// Variables de configuration globales
 static bool DEBUG = false;
 static bool CHEAT = false;
-
+// Effets sonores
 static Mix_Chunk *SOUND_JUMP;
 static Mix_Chunk *SOUND_SHOOT;
 static Mix_Chunk *SOUND_BULLET_HIT_WALL;
@@ -31,13 +31,13 @@ static Mix_Chunk *SOUND_ENEMY_DEATH;
 static Mix_Chunk *SOUND_PLAYER_DEATH;
 static Mix_Chunk *SOUND_FRUIT_COLLECT;
 static Mix_Chunk *SOUND_GAME_OVER;
-
+// Musiques de fond
 static Mix_Music *MUSIC_STAGE_1;
 static Mix_Music *MUSIC_GAME_OVER;
 static Mix_Music *MUSIC_MENU_PRINCIPAL;
 
 
-
+// Feuilles de sprites pour différents éléments du jeu
 static Sprite_Sheet sprite_sheet_player;
 static Sprite_Sheet sprite_sheet_map;
 static Sprite_Sheet sprite_sheet_enemy_small;
@@ -50,7 +50,7 @@ static Sprite_Sheet sprite_sheet_apple;
 static Sprite_Sheet sprite_sheet_banana;
 static Sprite_Sheet sprite_sheet_pineapple;
 static Sprite_Sheet sprite_sheet_collected;
-
+// Constantes de jeu
 static const float HEALTH_PLAYER = 0;
 static const float SPEED_PLAYER = 250;
 static const float JUMP_VELOCITY = 1350;
@@ -64,7 +64,7 @@ static const float HEALTH_ENEMY_SMALL = 1;
 static const float HEALTH_ENEMY_FLYING = 1;
 static const float HEALTH_ENEMY_MEDIUM = 1;
 static const float POINTS_FRUIT = 5;
-
+// Énumérations pour les couches de collision, types de fruits, types d'armes, types de projectiles
 typedef enum collision_layer
 {
     COLLISION_LAYER_PLAYER = 1,
@@ -100,27 +100,27 @@ typedef enum projectile_type
     PROJECTILE_TYPE_LARGE,
     PROJECTILE_TYPE_ROCKET,
 } Projectile_Type;
-
+// Structure de données pour définir les propriétés d'une arme
 typedef struct weapon
 {
-    float fire_rate; // Time between shots.
-    float recoil;
-    float projectile_speed;
-    Projectile_Type projectile_type;
-    vec2 sprite_size;
-    vec2 sprite_offset;
-    size_t projectile_animation_id;
-    Mix_Chunk *sfx;
+    float fire_rate; // Time between shots.// Intervalle entre les tirs
+    float recoil;// Recul de l'arme
+    float projectile_speed; // Vitesse du projectile
+    Projectile_Type projectile_type;// Type de projectile
+    vec2 sprite_size;// Taille du sprite de l'arme
+    vec2 sprite_offset;// Décalage du sprite de l'arme
+    size_t projectile_animation_id;// ID de l'animation du projectile
+    Mix_Chunk *sfx;// Effet sonore associé
 } Weapon;
-
+// Structure de données pour définir les propriétés d'un fruit
 typedef struct fruit
 {
     // float spawn_rate;
-    vec2 sprite_size;
-    vec2 sprite_offset;
-    size_t fruit_animation_id;
+    vec2 sprite_size;// Taille du sprite du fruit
+    vec2 sprite_offset;// Décalage du sprite du fruit
+    size_t fruit_animation_id;// ID de l'animation du fruit
 } Fruit;
-
+// Définition de certaines dimensions et masques de collision
 #define WIDTH 640
 #define HEIGHT 360
 static Weapon weapons[WEAPON_TYPE_COUNT] = {0};
@@ -138,28 +138,25 @@ static u8 player_mask = COLLISION_LAYER_ENEMY | COLLISION_LAYER_TERRAIN | COLLIS
 static const u8 fire_mask = COLLISION_LAYER_ENEMY | COLLISION_LAYER_PLAYER;
 static u8 projectile_mask = COLLISION_LAYER_ENEMY | COLLISION_LAYER_TERRAIN;
 static u8 fruit_mask = COLLISION_LAYER_TERRAIN | COLLISION_LAYER_PLAYER;
-
+// Pointeur vers la fenêtre SDL
 static SDL_Window *window;
-
+// Identifiants d'animations pour différents éléments du jeu
 static size_t anim_player_walk_id;
 static size_t anim_player_idle_id;
-
 static size_t anim_ennemy_small_run_id;
 static size_t anim_ennemy_medium_run_id;
 static size_t anim_ennemy_large_run_id;
 static size_t anim_ennemy_flying_fly_id;
-
 static size_t anim_fire_id;
 static size_t anim_projectile_small_id;
-
 static size_t anim_fruit_apple_id;
 static size_t anim_fruit_banana_id;
 static size_t anim_fruit_pineapple_id;
 static size_t anim_fruit_collected_id;
-
+// Identifiant du joueur et tableau pour stocker les textures
 static size_t player_id;
 static u32 texture_slots[16] = {0};
-
+// Type d'arme actuel, état du joueur au sol, compteurs de temps et score
 static Weapon_Type weapon_type = WEAPON_TYPE_PISTOL;
 static bool player_is_grounded = false;
 static float spawn_timer = 0;
@@ -168,23 +165,28 @@ static float shoot_timer = 0;
 static int score = 0;
 static float fruit_timer = 0;
 static u8 fruits_count = 0;
-
+// Tableau pour stocker le texte du score
 char scoreText[20];
 
 void projectile_on_hit(Body *self, Body *other, Hit hit)
-{
+{    
+    // Vérifie si la collision concerne un ennemi actif
     if (other->collision_layer == COLLISION_LAYER_ENEMY && other->is_active)
     {
+        // Récupère les entités associées aux corps en collision
         Entity *projectile = entity_get(self->entity_id);
         Entity *enemy = entity_get(other->entity_id);
+        // Vérifie le type de projectile et inflige des dégâts à l'ennemi
         if (projectile->animation_id == anim_projectile_small_id)
         {
             if (entity_damage(other->entity_id, 1))
             {
+                // Joue un son de mort d'ennemi et incrémente le score
                 audio_sound_play(SOUND_ENEMY_DEATH);
                 score++;
             }
         }
+         // Joue un son de blessure et détruit le projectile
         audio_sound_play(SOUND_HURT);
         entity_destroy(self->entity_id);
     }
@@ -192,51 +194,64 @@ void projectile_on_hit(Body *self, Body *other, Hit hit)
 
 void projectile_on_hit_static(Body *self, Static_Body *other, Hit hit)
 {
+    // Récupère l'entité associée au projectile
     Entity *projectile = entity_get(self->entity_id);
+    // Joue un son de tir si le projectile est de petit type, puis détruit le projectile
     if (projectile->animation_id == anim_projectile_small_id)
     {
         audio_sound_play(SOUND_SHOOT);
     }
     entity_destroy(self->entity_id);
 }
+// Spawne un projectile en fonction du type spécifié
 static void spawn_projectile(Projectile_Type projectile_type)
 {
+    // Récupère les informations de l'arme en cours
     Weapon weapon = weapons[weapon_type];
+    // Récupère l'entité du joueur et son corps physique
     Entity *player = entity_get(player_id);
     Body *body = physics_body_get(player->body_id);
     Animation *animation = animation_get(player->animation_id);
     bool is_flipped = animation->is_flipped;
+    // Détermine la vélocité du projectile en fonction de la direction du joueur
     vec2 velocity = {is_flipped ? -weapon.projectile_speed : weapon.projectile_speed, 0};
-
+    // Crée l'entité du projectile avec les paramètres spécifiés
     entity_create(body->aabb.position, weapon.sprite_size, weapon.sprite_offset, velocity, COLLISION_LAYER_PROJECTILE, projectile_mask, true, weapon.projectile_animation_id, projectile_on_hit, projectile_on_hit_static, 0, 0, ENTITY_PROJECTILE);
+    // Joue le son associé au projectile
     audio_sound_play(weapon.sfx);
 }
 
 void player_on_hit(Body *self, Body *other, Hit hit)
 {
+    // Vérifie si la collision concerne un ennemi actif et que le cheat n'est pas activé
     if (other->collision_layer == COLLISION_LAYER_ENEMY && !CHEAT)
     {
         Entity *enemy = entity_get(other->entity_id);
         if (enemy->is_active)
         {
+            // Affiche l'écran de fin de partie avec le score et le type d'ennemi rencontré
             show_game_over(score, enemy->entity_type);
-            
+            // Détruit l'entité du joueur et réinitialise le jeu
             entity_destroy(self->entity_id);
             // entity_destroy(other->entity_id);
             reset();
         }
     }
+    // Vérifie si la collision concerne une "fruit"
     else if (other->collision_layer == COLLISION_LAYER_FRUIT)
     {
         Entity *fruit = entity_get(other->entity_id);
         if (fruit->is_active)
         {
+            // Incrémente le score, réduit le compteur de "fruits" et affiche des effets visuels
             score += POINTS_FRUIT;
             fruits_count--;
             Body *body = physics_body_get(fruit->body_id);
             entity_create(body->aabb.position, (vec2){32, 32}, fruit->sprite_offset, body->velocity, COLLISION_LAYER_FX, fruit_mask, true, anim_fruit_collected_id, NULL, NULL, 0, 0, ENTITY_FX);
+           // Désactive la "fruit" et détruit son entité
             fruit->is_active = false;
             entity_destroy(other->entity_id);
+            // Joue le son de collecte de "fruit"
             audio_sound_play(SOUND_FRUIT_COLLECT);
         }
     }
@@ -244,18 +259,22 @@ void player_on_hit(Body *self, Body *other, Hit hit)
 
 void player_on_hit_static(Body *self, Static_Body *other, Hit hit)
 {
+    // Vérifie si le joueur touche une plateforme par le bas
     if (hit.normal[1] > 0)
     {
+        // Marque le joueur comme étant au sol
         player_is_grounded = true;
     }
 }
 
 void enemy_on_hit_static(Body *self, Static_Body *other, Hit hit)
 {
+    // Récupère l'entité associée au corps de l'ennemi
     Entity *entity = entity_get(self->entity_id);
-
+    // Réagit à la collision en fonction de la direction de la collision
     if (hit.normal[0] > 0)
     {
+        // Ajuste la vitesse du corps de l'ennemi en fonction de sa rage et de la direction de la collision
         if (entity->is_enraged)
             self->velocity[0] = entity->speed * 1.5f;
         else
@@ -264,6 +283,7 @@ void enemy_on_hit_static(Body *self, Static_Body *other, Hit hit)
 
     if (hit.normal[0] < 0)
     {
+        // Ajuste la vitesse du corps de l'ennemi en fonction de sa rage et de la direction de la collision
         if (entity->is_enraged)
             self->velocity[0] = -entity->speed * 1.5f;
         else
@@ -271,21 +291,23 @@ void enemy_on_hit_static(Body *self, Static_Body *other, Hit hit)
     }
 }
 
+// Génère un nombre aléatoire entre min et max
 float frandr(float min, float max)
 {
     float r = (rand() % 100) / 100.0f;
     return r * (max - min) + min;
 }
-
+// Génère et fait apparaître un fruit de type spécifié
 void spawn_fruit(Fruit_Type fruit_type)
 {
-
+    // Sélectionne une région de spawn de manière aléatoire
     const float *region = &SPAWN_REGIONS[rand() % SPAWN_REGION_COUNT][0];
+    // Génère des coordonnées aléatoires à l'intérieur de la région sélectionnée
     float x = frandr(region[0], region[0] + region[2]);
     float y = frandr(region[1], region[1] + region[3]);
-
+    // Récupère les informations du fruit spécifié
     Fruit fruit = fruits[fruit_type];
-
+    // Crée l'entité du fruit avec les paramètres spécifiés
     entity_create((vec2){x, y},
                   fruit.sprite_size,
                   fruit.sprite_offset,
@@ -300,16 +322,17 @@ void spawn_fruit(Fruit_Type fruit_type)
                   0,
                   ENTITY_FRUIT);
 }
-
+// Génère et fait apparaître un ennemi de type spécifié
 void spawn_enemy(Entity_Type enemy_type, bool is_enraged, bool is_flipped)
-{
+{   // Détermine la position de spawn en fonction de la direction
     float spawn_x = is_flipped ? render_width : 0;
     vec2 position = {spawn_x, (render_height - 64)};
+    // Initialise des variables pour les attributs de l'ennemi
     float speed, health;
     vec2 size, sprite_offset;
     size_t animation_id;
     On_Hit_Static on_hit_static = enemy_on_hit_static;
-
+    // Sélectionne les attributs en fonction du type d'ennemi
     switch (enemy_type)
     {
     case ENTITY_ENEMY_TYPE_SMALL:
@@ -352,16 +375,18 @@ void spawn_enemy(Entity_Type enemy_type, bool is_enraged, bool is_flipped)
         break;
 
     default:
+        // Gestion d'erreur pour un type d'ennemi invalide
         ERROR_EXIT("ERREUR SPANW ENNEMY= ", "Type d'ennemi invalide.");
         return;
     }
-
+    // Ajuste la vitesse si l'ennemi est enragé
     if (is_enraged)
     {
         speed *= 1.5;
     }
-
+    // Détermine la vélocité en fonction de la direction de l'ennemi
     vec2 velocity = {is_flipped ? -speed : speed, 0};
+    // Crée l'entité de l'ennemi avec les paramètres spécifiés
     size_t id = entity_create(position, size, sprite_offset, velocity, COLLISION_LAYER_ENEMY, enemy_mask, false, animation_id, NULL, on_hit_static, health, speed, enemy_type);
     Entity *entity = entity_get(id);
     entity->is_enraged = is_enraged;
@@ -369,43 +394,50 @@ void spawn_enemy(Entity_Type enemy_type, bool is_enraged, bool is_flipped)
 
 void fire_on_hit(Body *self, Body *other, Hit hit)
 {
+    // Gestion des collisions du projectile
+    // Si le projectile touche un ennemi actif
     if (other->collision_layer == COLLISION_LAYER_ENEMY)
     {
         if (other->is_active)
         {
+            // Récupère l'entité associée à l'ennemi touché et le détruit
             Entity *enemy = entity_get(other->entity_id);
             entity_destroy(other->entity_id);
         }
     }
+    // Si le projectile touche le joueur
     else if (other->collision_layer == COLLISION_LAYER_PLAYER)
     {
+        // Affiche l'écran de fin de jeu et réinitialise le jeu
         show_game_over(score, ENTITY_FIRE);
         reset();
     }
+    // Si le projectile touche un fruit
     else if (other->collision_layer == COLLISION_LAYER_FRUIT)
     {
+        // Détruit le fruit touché et réinitialise le compteur de fruits
         entity_destroy(other->entity_id);
         fruits_count = 0;
     }
 }
-
+// Réinitialise l'état du jeu
 void reset(void)
 {
-     
+    // Joue la musique du niveau 1
     audio_music_play(MUSIC_STAGE_1);
-
+    // Réinitialise la physique et les entités du jeu
     physics_reset();
     entity_reset();
-
+    // Réinitialise les timers, le score et le compteur de fruits
     ground_timer = 0;
     spawn_timer = 0;
     shoot_timer = 0;
     score = 0;
     fruits_count = 0;
-
+    // Récupère la largeur et la hauteur de la fenêtre de rendu
     float width = global.window_width / render_get_scale();
     float height = global.window_height / render_get_scale();
-
+    // Crée l'entité du joueur avec les paramètres spécifiés
     player_id = entity_create((vec2){100, 200}, // Postion (x,y)
                               (vec2){24, 24},   // Size
                               (vec2){0, 0},     // Offset sprite
@@ -423,7 +455,7 @@ void reset(void)
     );
     // Initialiser terrain du  niveau
     {
-
+        // Crée les corps statiques représentant le plafond, le sol, les murs et les plateformes
         physics_static_body_create((vec2){width * 0.5, height - 16}, (vec2){width, 32}, COLLISION_LAYER_TERRAIN);           // Plafond
         physics_static_body_create((vec2){width * 0.25 - 16, 16}, (vec2){width * 0.5 - 32, 48}, COLLISION_LAYER_TERRAIN);   // Sol gauche
         physics_static_body_create((vec2){width * 0.75 + 16, 16}, (vec2){width * 0.5 - 32, 48}, COLLISION_LAYER_TERRAIN);   // Sol droite
@@ -435,26 +467,28 @@ void reset(void)
         physics_static_body_create((vec2){width * 0.5, 32 * 3 + 24}, (vec2){448, 32}, COLLISION_LAYER_TERRAIN);         // Plateforme au centre
         physics_static_body_create((vec2){16, height - 64}, (vec2){32, 64}, COLLISION_LAYER_ENEMY_PASSTHROUGH);         // Spawn ennemis de gauche
         physics_static_body_create((vec2){width - 16, height - 64}, (vec2){32, 64}, COLLISION_LAYER_ENEMY_PASSTHROUGH); // Spawn ennemis de droite
-
+        // Crée un déclencheur pour la disparition des ennemis (feu)
         // Trigger de disparation des ennemis (feu)
         physics_trigger_create((vec2){render_width * 0.5, -4}, (vec2){64, 8}, 0, fire_mask, fire_on_hit);
     }
+    // Crée les entités représentant le feu dans le niveau
     entity_create((vec2){render_width * 0.5, 0}, (vec2){32, 64}, (vec2){0, 0}, (vec2){0, 0}, 0, 0, true, anim_fire_id, NULL, NULL, 0, 0, ENTITY_FIRE);
     entity_create((vec2){render_width * 0.5 + 16, -16}, (vec2){32, 64}, (vec2){0, 0}, (vec2){0, 0}, 0, 0, true, anim_fire_id, NULL, NULL, 0, 0, ENTITY_FIRE);
     entity_create((vec2){render_width * 0.5 - 16, -16}, (vec2){32, 64}, (vec2){0, 0}, (vec2){0, 0}, 0, 0, true, anim_fire_id, NULL, NULL, 0, 0, ENTITY_FIRE);
 }
-
+// Gère les entrées du joueur et met à jour la vélocité du joueur en conséquence
 static void input_handle(Body *body_player)
 {
+    // Quitte le jeu si la touche Escape ou le bouton de démarrage de la manette est enfoncé
     if (global.input.escape || global.input.start_controller)
         global.should_quit = true;
-
+    // Récupère les animations du joueur
     Animation *walk_anim = animation_get(anim_player_walk_id);
     Animation *idle_anim = animation_get(anim_player_idle_id);
-
+    // Initialise la vélocité du joueur
     float velx = 0;
     float vely = body_player->velocity[1];
-
+    // Gère les entrées pour déplacer le joueur
     if (global.input.right || global.input.right_controller || global.input.joystick_right_controller)
     {
         velx += SPEED_PLAYER;
@@ -489,7 +523,7 @@ static void input_handle(Body *body_player)
 
 int main(int argc, char *argv[])
 {
-
+     // Initialiser divers sous-systèmes
     time_init(60);
     SDL_Window *window = render_init();
     config_init();
@@ -508,6 +542,7 @@ int main(int argc, char *argv[])
 
     // Initialiser audios
     {
+        // Effets sonores
         audio_sound_load(&SOUND_JUMP, "assets/audio/jump.wav");
         audio_sound_load(&SOUND_BULLET_HIT_WALL, "assets/audio/bullet_hit_wall.wav");
         audio_sound_load(&SOUND_HURT, "assets/audio/hurt.wav");
@@ -518,7 +553,7 @@ int main(int argc, char *argv[])
         audio_sound_load(&SOUND_GAME_OVER, "assets/audio/Game_Over_sound_effect.mp3");
 
 
-        
+        // Musique de fond
         audio_music_load(&MUSIC_STAGE_1, "assets/audio/breezys_mega_quest_2_stage_1.mp3");
         audio_music_load(&MUSIC_GAME_OVER, "assets/audio/Game_Over_music.mp3");
         audio_music_load(&MUSIC_MENU_PRINCIPAL, "assets/audio/Principal_Menu_music.mp3");
@@ -752,7 +787,7 @@ int main(int argc, char *argv[])
                     }
                 }
             }
-
+    // Rendre la scène de jeu
             render_begin();
 
             if (DEBUG)
@@ -834,9 +869,10 @@ int main(int argc, char *argv[])
 
         time_update_late();
     }
+    // Nettoyer et terminer le jeu
     mycurl_cleanup(&global.curl_handle);
     mycurl_cleanup(&global.post_curl_handle);
-
+    // Nettoyer les scènes et libérer les ressources
     scenes_end();
     return EXIT_SUCCESS;
 }
