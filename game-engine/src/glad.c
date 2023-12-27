@@ -53,27 +53,30 @@ static PFNWGLGETPROCADDRESSPROC_PRIVATE gladGetProcAddressPtr;
 #endif
 #endif
 
+// Fonction pour charger la bibliothèque OpenGL sur les plateformes non-UWP
 static int open_gl(void)
 {
 #ifndef IS_UWP
+// Tentative de chargement de la bibliothèque opengl32.dll
 	libGL = LoadLibraryW(L"opengl32.dll");
 	if (libGL != NULL)
 	{
+		// Chargement de la fonction wglGetProcAddress
 		void (*tmp)(void);
 		tmp = (void (*)(void))GetProcAddress(libGL, "wglGetProcAddress");
 		gladGetProcAddressPtr = (PFNWGLGETPROCADDRESSPROC_PRIVATE)tmp;
-		return gladGetProcAddressPtr != NULL;
+		return gladGetProcAddressPtr != NULL;// Retourne 1 si le chargement est réussi
 	}
 #endif
 
-	return 0;
+	return 0;// Retourne 0 en cas d'échec du chargement
 }
-
+// Fonction pour décharger la bibliothèque OpenGL
 static void close_gl(void)
 {
 	if (libGL != NULL)
 	{
-		FreeLibrary((HMODULE)libGL);
+		FreeLibrary((HMODULE)libGL); // Libère la bibliothèque chargée
 		libGL = NULL;
 	}
 }
@@ -85,7 +88,7 @@ static void *libGL;
 typedef void *(APIENTRYP PFNGLXGETPROCADDRESSPROC_PRIVATE)(const char *);
 static PFNGLXGETPROCADDRESSPROC_PRIVATE gladGetProcAddressPtr;
 #endif
-
+// Fonction pour charger la bibliothèque OpenGL sur les plateformes Apple et autres
 static int open_gl(void)
 {
 #ifdef __APPLE__
@@ -101,33 +104,35 @@ static int open_gl(void)
 	unsigned int index = 0;
 	for (index = 0; index < (sizeof(NAMES) / sizeof(NAMES[0])); index++)
 	{
-		libGL = dlopen(NAMES[index], RTLD_NOW | RTLD_GLOBAL);
+		libGL = dlopen(NAMES[index], RTLD_NOW | RTLD_GLOBAL);// Tentative de chargement de la bibliothèque
 
 		if (libGL != NULL)
 		{
 #if defined(__APPLE__) || defined(__HAIKU__)
-			return 1;
+			return 1;// Retourne 1 si le chargement est réussi (plateformes Apple et Haiku)
 #else
 			gladGetProcAddressPtr = (PFNGLXGETPROCADDRESSPROC_PRIVATE)dlsym(libGL,
 																			"glXGetProcAddressARB");
-			return gladGetProcAddressPtr != NULL;
+			return gladGetProcAddressPtr != NULL;// Retourne 1 si le chargement est réussi (autres plateformes)
+#endif
 #endif
 		}
 	}
 
-	return 0;
+	return 0;// Retourne 0 en cas d'échec du chargement
 }
-
+// Fonction pour décharger la bibliothèque OpenGL sur les plateformes non-UWP
 static void close_gl(void)
 {
 	if (libGL != NULL)
 	{
-		dlclose(libGL);
+		dlclose(libGL);// Ferme la bibliothèque dynamique chargée
 		libGL = NULL;
 	}
 }
 #endif
 
+// Fonction pour obtenir un pointeur de fonction OpenGL spécifique
 static void *get_proc(const char *namez)
 {
 	void *result = NULL;
@@ -137,34 +142,34 @@ static void *get_proc(const char *namez)
 #if !defined(__APPLE__) && !defined(__HAIKU__)
 	if (gladGetProcAddressPtr != NULL)
 	{
-		result = gladGetProcAddressPtr(namez);
+		result = gladGetProcAddressPtr(namez);// Utilisation de glXGetProcAddressARB sur les plateformes non-Apple
 	}
 #endif
 	if (result == NULL)
 	{
 #if defined(_WIN32) || defined(__CYGWIN__)
-		result = (void *)GetProcAddress((HMODULE)libGL, namez);
+		result = (void *)GetProcAddress((HMODULE)libGL, namez);// Utilisation de GetProcAddress sur Windows
 #else
-		result = dlsym(libGL, namez);
+		result = dlsym(libGL, namez);// Utilisation de dlsym sur les autres plateformes
 #endif
 	}
 
 	return result;
 }
-
+// Fonction principale pour charger les fonctions OpenGL avec glad
 int gladLoadGL(void)
 {
 	int status = 0;
 
-	if (open_gl())
+	if (open_gl())// Charge la bibliothèque OpenGL
 	{
-		status = gladLoadGLLoader(&get_proc);
-		close_gl();
+		status = gladLoadGLLoader(&get_proc);// Utilise glad pour charger les fonctions OpenGL
+        close_gl(); // Décharge la bibliothèque OpenGL
 	}
 
-	return status;
+	return status;// Retourne le statut du chargement
 }
-
+// Structure contenant la version d'OpenGL chargée
 struct gladGLversionStruct GLVersion = {0, 0};
 
 #if defined(GL_ES_VERSION_3_0) || defined(GL_VERSION_3_0)
@@ -177,14 +182,15 @@ static int max_loaded_minor;
 static const char *exts = NULL;
 static int num_exts_i = 0;
 static char **exts_i = NULL;
-
+// Fonction pour récupérer les extensions OpenGL
 static int get_exts(void)
 {
 #ifdef _GLAD_IS_SOME_NEW_VERSION
+ // Si la version d'OpenGL chargée est inférieure à 3, utilise glGetString pour obtenir les extensions
 	if (max_loaded_major < 3)
 	{
 #endif
-		exts = (const char *)glGetString(GL_EXTENSIONS);
+		exts = (const char *)glGetString(GL_EXTENSIONS);// Utilise glGetString pour obtenir les extensions
 #ifdef _GLAD_IS_SOME_NEW_VERSION
 	}
 	else
@@ -192,34 +198,35 @@ static int get_exts(void)
 		unsigned int index;
 
 		num_exts_i = 0;
-		glGetIntegerv(GL_NUM_EXTENSIONS, &num_exts_i);
+		glGetIntegerv(GL_NUM_EXTENSIONS, &num_exts_i);// Obtient le nombre d'extensions disponibles
 		if (num_exts_i > 0)
 		{
-			exts_i = (char **)malloc((size_t)num_exts_i * (sizeof *exts_i));
+			exts_i = (char **)malloc((size_t)num_exts_i * (sizeof *exts_i));// Alloue de la mémoire pour stocker les noms des extensions
 		}
 
 		if (exts_i == NULL)
 		{
-			return 0;
+			return 0;// Retourne 0 en cas d'échec de l'allocation de mémoire
 		}
 
 		for (index = 0; index < (unsigned)num_exts_i; index++)
 		{
-			const char *gl_str_tmp = (const char *)glGetStringi(GL_EXTENSIONS, index);
+			const char *gl_str_tmp = (const char *)glGetStringi(GL_EXTENSIONS, index); // Utilise glGetStringi pour obtenir les noms d'extensions individuelles
 			size_t len = strlen(gl_str_tmp);
 
-			char *local_str = (char *)malloc((len + 1) * sizeof(char));
+			char *local_str = (char *)malloc((len + 1) * sizeof(char));// Alloue de la mémoire pour stocker le nom de l'extension
 			if (local_str != NULL)
 			{
-				memcpy(local_str, gl_str_tmp, (len + 1) * sizeof(char));
+				memcpy(local_str, gl_str_tmp, (len + 1) * sizeof(char));// Copie le nom de l'extension dans la mémoire allouée
+            }
 			}
-			exts_i[index] = local_str;
+			exts_i[index] = local_str;// Stocke le pointeur vers le nom de l'extension dans le tableau
 		}
 	}
 #endif
-	return 1;
+	return 1;// Retourne 1 en cas de succès
 }
-
+// Libère la mémoire allouée pour stocker les noms des extensions
 static void free_exts(void)
 {
 	if (exts_i != NULL)
@@ -227,16 +234,17 @@ static void free_exts(void)
 		int index;
 		for (index = 0; index < num_exts_i; index++)
 		{
-			free((char *)exts_i[index]);
+			free((char *)exts_i[index]);// Libère la mémoire pour chaque nom d'extension
 		}
-		free((void *)exts_i);
-		exts_i = NULL;
+		free((void *)exts_i);// Libère la mémoire pour le tableau de pointeurs
+		exts_i = NULL;// Définit le pointeur à NULL après la libération de mémoire
 	}
 }
-
+// Vérifie si une extension OpenGL spécifique est présente
 static int has_ext(const char *ext)
 {
 #ifdef _GLAD_IS_SOME_NEW_VERSION
+// Si la version d'OpenGL chargée est inférieure à 3, utilise la chaîne d'extensions directement
 	if (max_loaded_major < 3)
 	{
 #endif
@@ -248,7 +256,7 @@ static int has_ext(const char *ext)
 		{
 			return 0;
 		}
-
+	 // Parcours la chaîne d'extensions pour trouver la correspondance
 		while (1)
 		{
 			loc = strstr(extensions, ext);
@@ -261,7 +269,7 @@ static int has_ext(const char *ext)
 			if ((loc == extensions || *(loc - 1) == ' ') &&
 				(*terminator == ' ' || *terminator == '\0'))
 			{
-				return 1;
+				return 1;// Retourne 1 si l'extension est trouvée
 			}
 			extensions = terminator;
 		}
@@ -272,19 +280,20 @@ static int has_ext(const char *ext)
 		int index;
 		if (exts_i == NULL)
 			return 0;
+		// Si la version d'OpenGL chargée est 3 ou supérieure, recherche dans le tableau de pointeurs d'extensions
 		for (index = 0; index < num_exts_i; index++)
 		{
 			const char *e = exts_i[index];
 
 			if (exts_i[index] != NULL && strcmp(e, ext) == 0)
 			{
-				return 1;
+				return 1;// Retourne 1 si l'extension est trouvée dans le tableau
 			}
 		}
 	}
 #endif
 
-	return 0;
+	return 0;// Retourne 0 si l'extension n'est pas trouvée
 }
 int GLAD_GL_VERSION_1_0 = 0;
 int GLAD_GL_VERSION_1_1 = 0;
@@ -1809,15 +1818,17 @@ static void load_GL_VERSION_3_3(GLADloadproc load)
 	glad_glSecondaryColorP3ui = (PFNGLSECONDARYCOLORP3UIPROC)load("glSecondaryColorP3ui");
 	glad_glSecondaryColorP3uiv = (PFNGLSECONDARYCOLORP3UIVPROC)load("glSecondaryColorP3uiv");
 }
+// Fonction pour trouver les extensions OpenGL
 static int find_extensionsGL(void)
 {
+	// Vérifie si les extensions OpenGL peuvent être récupérées
 	if (!get_exts())
 		return 0;
-	(void)&has_ext;
-	free_exts();
-	return 1;
+	(void)&has_ext;// Supprime le avertissement de variable non utilisée
+	free_exts();// Libère la mémoire allouée pour les extensions
+	return 1;// Retourne 1 en cas de succès
 }
-
+// Fonction pour trouver la version principale et mineure d'OpenGL
 static void find_coreGL(void)
 {
 
@@ -1837,7 +1848,7 @@ static void find_coreGL(void)
 	version = (const char *)glGetString(GL_VERSION);
 	if (!version)
 		return;
-
+	// Supprimer les préfixes possibles pour obtenir la version
 	for (i = 0; prefixes[i]; i++)
 	{
 		const size_t length = strlen(prefixes[i]);
@@ -1849,16 +1860,18 @@ static void find_coreGL(void)
 	}
 
 /* PR #18 */
+// Obtient les versions majeure et mineure
 #ifdef _MSC_VER
 	sscanf_s(version, "%d.%d", &major, &minor);
 #else
 	sscanf(version, "%d.%d", &major, &minor);
 #endif
-
+	// Enregistre la version trouvée
 	GLVersion.major = major;
 	GLVersion.minor = minor;
 	max_loaded_major = major;
 	max_loaded_minor = minor;
+	// Définit les indicateurs de disponibilité des versions OpenGL
 	GLAD_GL_VERSION_1_0 = (major == 1 && minor >= 0) || major > 1;
 	GLAD_GL_VERSION_1_1 = (major == 1 && minor >= 1) || major > 1;
 	GLAD_GL_VERSION_1_2 = (major == 1 && minor >= 2) || major > 1;
@@ -1871,23 +1884,28 @@ static void find_coreGL(void)
 	GLAD_GL_VERSION_3_1 = (major == 3 && minor >= 1) || major > 3;
 	GLAD_GL_VERSION_3_2 = (major == 3 && minor >= 2) || major > 3;
 	GLAD_GL_VERSION_3_3 = (major == 3 && minor >= 3) || major > 3;
+	// Si la version est supérieure à 3.3, ajuste les versions maximales
 	if (GLVersion.major > 3 || (GLVersion.major >= 3 && GLVersion.minor >= 3))
 	{
 		max_loaded_major = 3;
 		max_loaded_minor = 3;
 	}
 }
-
+// Fonction principale pour charger les fonctions OpenGL avec le loader donné
 int gladLoadGLLoader(GLADloadproc load)
 {
 	GLVersion.major = 0;
 	GLVersion.minor = 0;
+	// Obtient la fonction glGetString à partir du loader
 	glGetString = (PFNGLGETSTRINGPROC)load("glGetString");
 	if (glGetString == NULL)
 		return 0;
+	// Vérifie si la chaîne de version OpenGL peut être obtenue
 	if (glGetString(GL_VERSION) == NULL)
 		return 0;
+	// Trouve la version principale et mineure d'OpenGL
 	find_coreGL();
+	// Charge les fonctions spécifiques pour chaque version d'OpenGL
 	load_GL_VERSION_1_0(load);
 	load_GL_VERSION_1_1(load);
 	load_GL_VERSION_1_2(load);
@@ -1900,8 +1918,9 @@ int gladLoadGLLoader(GLADloadproc load)
 	load_GL_VERSION_3_1(load);
 	load_GL_VERSION_3_2(load);
 	load_GL_VERSION_3_3(load);
-
+	// Vérifie les extensions OpenGL
 	if (!find_extensionsGL())
 		return 0;
+		// Retourne 1 si OpenGL est disponible, sinon 0
 	return GLVersion.major != 0 || GLVersion.minor != 0;
 }
