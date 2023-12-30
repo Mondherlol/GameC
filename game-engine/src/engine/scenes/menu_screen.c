@@ -16,6 +16,7 @@ float debug_menu_pos_y = 50;
 #define MENU_ITEMS_COUNT 3
 
 static Mix_Chunk *SOUND_SELECTED_BUTTON;
+static Mix_Music *MUSIC_MENU_PRINCIPAL;
 
 // tab pour stocker les images
 Image menuImages[MENU_ITEMS_COUNT];
@@ -23,11 +24,16 @@ Image username_background;
 // Variable pour suivre la sélection actuelle dans le menu
 int currentSelection = 0;
 
-u8 texture_slots[16] = {0};
+u8 texture_slots[32] = {0};
 
 // Obtenir les dimensions de la fenetre
 float width;
 float height;
+
+void reset_menu()
+{
+    audio_music_play(MUSIC_MENU_PRINCIPAL);
+}
 
 void debug_username_menu()
 {
@@ -41,6 +47,7 @@ void debug_username_menu()
 void menu_init()
 {
     audio_sound_load(&SOUND_SELECTED_BUTTON, "assets/audio/Select 1.wav");
+    audio_music_load(&MUSIC_MENU_PRINCIPAL, "assets/audio/Principal_Menu_music.mp3");
 
     init_image(&menuImages[0], "assets/menu/1menu_selected_play.png");
     init_image(&menuImages[1], "assets/menu/2menu_selected_scores.png");
@@ -52,6 +59,7 @@ void menu_init()
     height = global.window_height / render_get_scale();
 
     strcpy(global.generated_code, "");
+    reset_menu();
 }
 
 #define SELECTION_DELAY 200 // Ajoutez cette constante pour définir la durée de la pause en millisecondes
@@ -87,6 +95,8 @@ static void menu_input_handle()
             global.current_screen = GAME_SCREEN;
             if (global.server)
                 send_game_statut(true, "");
+            reset_game();
+
             break;
         case 1:
             global.current_screen = SCORE_SCREEN;
@@ -148,6 +158,8 @@ void display_menu(SDL_Window *window)
                         global.current_screen = GAME_SCREEN;
                         if (global.server)
                             send_game_statut(true, "");
+                        reset_game();
+
                         break;
                     case 1:
                         global.current_screen = SCORE_SCREEN;

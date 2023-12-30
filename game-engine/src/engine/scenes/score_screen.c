@@ -8,7 +8,7 @@
 #include "../scores.h"
 
 Image menuImage;
-u8 score_screen_texture_slots[16] = {0};
+u8 score_screen_texture_slots[32] = {0};
 
 Score *localscores;
 Score *onlinescores;

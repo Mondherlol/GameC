@@ -41,5 +41,6 @@ typedef struct global
 } Global;
 
 void spawn_enemy(Entity_Type enemy_type, bool is_enraged, bool is_flipped, Visitor *owner);
+void reset_game(void);
 
 extern Global global;

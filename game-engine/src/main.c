@@ -21,8 +21,6 @@
 #include "engine/visitors.h"
 #include "engine/array_list.h"
 
-void reset(void);
-
 static bool DEBUG = false;
 static bool CHEAT = false;
 
@@ -36,8 +34,6 @@ static Mix_Chunk *SOUND_FRUIT_COLLECT;
 static Mix_Chunk *SOUND_GAME_OVER;
 
 static Mix_Music *MUSIC_STAGE_1;
-static Mix_Music *MUSIC_GAME_OVER;
-static Mix_Music *MUSIC_MENU_PRINCIPAL;
 
 static Sprite_Sheet sprite_sheet_player;
 static Sprite_Sheet sprite_sheet_player_with_weapon;
@@ -51,21 +47,24 @@ static Sprite_Sheet sprite_sheet_props;
 static Sprite_Sheet sprite_sheet_apple;
 static Sprite_Sheet sprite_sheet_banana;
 static Sprite_Sheet sprite_sheet_pineapple;
+static Sprite_Sheet sprite_sheet_strawberry;
+static Sprite_Sheet sprite_sheet_kiwi;
+static Sprite_Sheet sprite_sheet_cherries;
 static Sprite_Sheet sprite_sheet_collected;
 static Sprite_Sheet sprite_sheet_weapons;
 
 static const float HEALTH_PLAYER = 0;
 static const float SPEED_PLAYER = 250;
-static const float JUMP_VELOCITY = 1350;
+static const float JUMP_VELOCITY = 1200;
 static const float GROUNDED_TIME = 0.1f; // Temps passé au sol
 static const float SPEED_ENEMY_LARGE = 80;
 static const float SPEED_ENEMY_MEDIUM = 90;
 static const float SPEED_ENEMY_SMALL = 100;
 static const float SPEED_ENEMY_FLYING = 100;
-static const float HEALTH_ENEMY_LARGE = 3;
+static const float HEALTH_ENEMY_LARGE = 10;
 static const float HEALTH_ENEMY_SMALL = 1;
 static const float HEALTH_ENEMY_FLYING = 1;
-static const float HEALTH_ENEMY_MEDIUM = 1;
+static const float HEALTH_ENEMY_MEDIUM = 6;
 static const float POINTS_FRUIT = 5;
 
 typedef enum collision_layer
@@ -84,16 +83,19 @@ typedef enum fruit_type
     FRUIT_TYPE_APPLE, // 0
     FRUIT_TYPE_BANANA,
     FRUIT_TYPE_PINEAPPLE,
+    FRUIT_TYPE_KIWI,
+    FRUIT_TYPE_CHERRIES,
+    FRUIT_TYPE_STRAWBERRY,
     FRUIT_TYPE_COUNT,
 } Fruit_Type;
 
 typedef enum weapon_type
 {
+    WEAPON_TYPE_ROCKET_LAUNCHER,
     WEAPON_TYPE_SHOTGUN,
+    WEAPON_TYPE_SMG,
     WEAPON_TYPE_PISTOL,
     WEAPON_TYPE_REVOLVER,
-    WEAPON_TYPE_SMG,
-    WEAPON_TYPE_ROCKET_LAUNCHER,
     WEAPON_TYPE_COUNT,
 } Weapon_Type;
 
@@ -114,7 +116,6 @@ typedef struct weapon
     vec2 sprite_offset;
     size_t projectile_animation_id;
     Mix_Chunk *sfx;
-    size_t weapon_animation_id;
 } Weapon;
 
 typedef struct fruit
@@ -161,10 +162,13 @@ static size_t anim_pistol_idle_id;
 static size_t anim_fruit_apple_id;
 static size_t anim_fruit_banana_id;
 static size_t anim_fruit_pineapple_id;
+static size_t anim_fruit_kiwi_id;
+static size_t anim_fruit_cherries_id;
+static size_t anim_fruit_strawberry_id;
 static size_t anim_fruit_collected_id;
 
 static size_t player_id;
-static u32 texture_slots[16] = {0};
+static u32 texture_slots[32] = {0};
 
 static Weapon_Type weapon_type = WEAPON_TYPE_PISTOL;
 static bool player_is_grounded = false;
@@ -231,8 +235,6 @@ void player_on_hit(Body *self, Body *other, Hit hit)
 
             if (global.server)
                 send_game_statut(false, enemy->owner != NULL ? enemy->owner->socket_id : "");
-
-            reset();
         }
     }
     else if (other->collision_layer == COLLISION_LAYER_FRUIT)
@@ -393,7 +395,6 @@ void fire_on_hit(Body *self, Body *other, Hit hit)
         show_game_over(score, ENTITY_FIRE, "suicide");
         if (global.server)
             send_game_statut(false, "");
-        reset();
     }
     else if (other->collision_layer == COLLISION_LAYER_FRUIT)
     {
@@ -402,9 +403,8 @@ void fire_on_hit(Body *self, Body *other, Hit hit)
     }
 }
 
-void reset(void)
+void reset_game(void)
 {
-
     audio_music_play(MUSIC_STAGE_1);
 
     physics_reset();
@@ -420,7 +420,7 @@ void reset(void)
     float height = global.window_height / render_get_scale();
 
     player_id = entity_create((vec2){100, 200}, // Postion (x,y)
-                              (vec2){24, 24},   // Size
+                              (vec2){20, 20},   // Size
                               (vec2){0, 0},     // Offset sprite
                               (vec2){0, 0},     // Velocité
                               COLLISION_LAYER_PLAYER,
@@ -541,8 +541,6 @@ int main(int argc, char *argv[])
         audio_sound_load(&SOUND_GAME_OVER, "assets/audio/Game_Over_sound_effect.mp3");
 
         audio_music_load(&MUSIC_STAGE_1, "assets/audio/breezys_mega_quest_2_stage_1.mp3");
-        audio_music_load(&MUSIC_GAME_OVER, "assets/audio/Game_Over_music.mp3");
-        audio_music_load(&MUSIC_MENU_PRINCIPAL, "assets/audio/Principal_Menu_music.mp3");
     }
 
     // Initialiser sprites
@@ -560,6 +558,9 @@ int main(int argc, char *argv[])
         render_sprite_sheet_init(&sprite_sheet_apple, "assets/spritesheets/Apple.png", 32, 32);
         render_sprite_sheet_init(&sprite_sheet_banana, "assets/spritesheets/Bananas.png", 32, 32);
         render_sprite_sheet_init(&sprite_sheet_pineapple, "assets/spritesheets/Pineapple.png", 32, 32);
+        render_sprite_sheet_init(&sprite_sheet_kiwi, "assets/spritesheets/Kiwi.png", 32, 32);
+        render_sprite_sheet_init(&sprite_sheet_cherries, "assets/spritesheets/Cherries.png", 32, 32);
+        render_sprite_sheet_init(&sprite_sheet_strawberry, "assets/spritesheets/Strawberry.png", 32, 32);
         render_sprite_sheet_init(&sprite_sheet_collected, "assets/spritesheets/Collected.png", 32, 32);
         render_sprite_sheet_init(&sprite_sheet_weapons, "assets/spritesheets/weapons.png", 32, 32);
     }
@@ -596,10 +597,16 @@ int main(int argc, char *argv[])
         size_t adef_fruit_apple_id = animation_definition_create(&sprite_sheet_apple, 0.1, 0, (u8[]){0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16}, 17);
         size_t adef_fruit_banana_id = animation_definition_create(&sprite_sheet_banana, 0.1, 0, (u8[]){0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16}, 17);
         size_t adef_fruit_pineapple_id = animation_definition_create(&sprite_sheet_pineapple, 0.1, 0, (u8[]){0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16}, 17);
+        size_t adef_fruit_kiwi_id = animation_definition_create(&sprite_sheet_kiwi, 0.1, 0, (u8[]){0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16}, 17);
+        size_t adef_fruit_cherries_id = animation_definition_create(&sprite_sheet_cherries, 0.1, 0, (u8[]){0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16}, 17);
+        size_t adef_fruit_strawberry_id = animation_definition_create(&sprite_sheet_strawberry, 0.1, 0, (u8[]){0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16}, 17);
         size_t adef_fruit_collected_id = animation_definition_create(&sprite_sheet_collected, 0.1, 0, (u8[]){0, 1, 2, 3, 4, 5}, 6);
         anim_fruit_apple_id = animation_create(adef_fruit_apple_id, true);
         anim_fruit_banana_id = animation_create(adef_fruit_banana_id, true);
         anim_fruit_pineapple_id = animation_create(adef_fruit_pineapple_id, true);
+        anim_fruit_kiwi_id = animation_create(adef_fruit_kiwi_id, true);
+        anim_fruit_cherries_id = animation_create(adef_fruit_cherries_id, true);
+        anim_fruit_strawberry_id = animation_create(adef_fruit_strawberry_id, true);
         anim_fruit_collected_id = animation_create(adef_fruit_collected_id, false);
     }
 
@@ -614,7 +621,7 @@ int main(int argc, char *argv[])
             .sprite_size = {16, 16},
             .sprite_offset = {0, 0},
             .sfx = SOUND_SHOOT,
-            .weapon_animation_id = anim_pistol_idle_id};
+        };
     }
 
     // Initialiser fruits
@@ -634,9 +641,22 @@ int main(int argc, char *argv[])
             .sprite_offset = {0, 0},
             .sprite_size = {32, 32},
         };
+        fruits[FRUIT_TYPE_KIWI] = (Fruit){
+            .fruit_animation_id = anim_fruit_kiwi_id,
+            .sprite_offset = {0, 0},
+            .sprite_size = {32, 32},
+        };
+        fruits[FRUIT_TYPE_CHERRIES] = (Fruit){
+            .fruit_animation_id = anim_fruit_cherries_id,
+            .sprite_offset = {0, 0},
+            .sprite_size = {32, 32},
+        };
+        fruits[FRUIT_TYPE_STRAWBERRY] = (Fruit){
+            .fruit_animation_id = anim_fruit_strawberry_id,
+            .sprite_offset = {0, 0},
+            .sprite_size = {32, 32},
+        };
     }
-
-    reset();
 
     while (!global.should_quit)
     {
@@ -757,7 +777,7 @@ int main(int argc, char *argv[])
             }
             // Spawn fruits
             {
-                if (fruits_count == 0)
+                if (fruits_count <= 2)
                 {
                     fruits_count++;
                     u8 random_fruit_value = rand() % FRUIT_TYPE_COUNT;
@@ -773,6 +793,17 @@ int main(int argc, char *argv[])
 
                     case 2:
                         spawn_fruit(FRUIT_TYPE_PINEAPPLE);
+                        break;
+                    case 3:
+                        spawn_fruit(FRUIT_TYPE_KIWI);
+                        break;
+
+                    case 4:
+                        spawn_fruit(FRUIT_TYPE_CHERRIES);
+                        break;
+
+                    case 5:
+                        spawn_fruit(FRUIT_TYPE_STRAWBERRY);
                         break;
 
                     default:
@@ -811,7 +842,8 @@ int main(int argc, char *argv[])
             render_sprite_sheet_frame(&sprite_sheet_map, 0, 0, (vec2){render_width / 2.0, render_height / 2.0}, false, (vec4){1, 1, 1, DEBUG ? 0.2 : 1}, texture_slots);
 
             // Rendre l'arme du joueur
-            render_sprite_sheet_frame(&sprite_sheet_weapons, 0, 3, (vec2){body_player->aabb.position[0] + (player_is_flipped ? -7 : 7), body_player->aabb.position[1]}, player_is_flipped, (vec4){1, 1, 1, 1}, texture_slots);
+            if (body_player->velocity[0] != 0 || (global.input.left || global.input.right))
+                render_sprite_sheet_frame(&sprite_sheet_weapons, 0, 3, (vec2){body_player->aabb.position[0] + (player_is_flipped ? -10 : 10), body_player->aabb.position[1]}, player_is_flipped, (vec4){1, 1, 1, 1}, texture_slots);
 
             // Gerer l'animation des entity
             for (size_t i = 0; i < entity_count(); ++i)

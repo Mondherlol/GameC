@@ -21,6 +21,22 @@ uniform sampler2D texture_slot_12;
 uniform sampler2D texture_slot_13;
 uniform sampler2D texture_slot_14;
 uniform sampler2D texture_slot_15;
+uniform sampler2D texture_slot_16;
+uniform sampler2D texture_slot_17;
+uniform sampler2D texture_slot_18;
+uniform sampler2D texture_slot_19;
+uniform sampler2D texture_slot_20;
+uniform sampler2D texture_slot_21;
+uniform sampler2D texture_slot_22;
+uniform sampler2D texture_slot_23;
+uniform sampler2D texture_slot_24;
+uniform sampler2D texture_slot_25;
+uniform sampler2D texture_slot_26;
+uniform sampler2D texture_slot_27;
+uniform sampler2D texture_slot_28;
+uniform sampler2D texture_slot_29;
+uniform sampler2D texture_slot_30;
+uniform sampler2D texture_slot_31;
 
 void main() {
 	switch (v_texture_slot) {
@@ -40,5 +56,21 @@ void main() {
     case 13: o_color = texture(texture_slot_13, v_uvs) * v_color; break;
     case 14: o_color = texture(texture_slot_14, v_uvs) * v_color; break;
     case 15: o_color = texture(texture_slot_15, v_uvs) * v_color; break;
+	case 16: o_color = texture(texture_slot_16, v_uvs) * v_color; break;
+	case 17: o_color = texture(texture_slot_17, v_uvs) * v_color; break;
+	case 18: o_color = texture(texture_slot_18, v_uvs) * v_color; break;
+	case 19: o_color = texture(texture_slot_19, v_uvs) * v_color; break;
+	case 20: o_color = texture(texture_slot_20, v_uvs) * v_color; break;
+	case 21: o_color = texture(texture_slot_21, v_uvs) * v_color; break;
+	case 22: o_color = texture(texture_slot_22, v_uvs) * v_color; break;
+	case 23: o_color = texture(texture_slot_23, v_uvs) * v_color; break;
+	case 24: o_color = texture(texture_slot_24, v_uvs) * v_color; break;
+	case 25: o_color = texture(texture_slot_25, v_uvs) * v_color; break;
+	case 26: o_color = texture(texture_slot_26, v_uvs) * v_color; break;
+	case 27: o_color = texture(texture_slot_27, v_uvs) * v_color; break;
+	case 28: o_color = texture(texture_slot_28, v_uvs) * v_color; break;
+	case 29: o_color = texture(texture_slot_29, v_uvs) * v_color; break;
+	case 30: o_color = texture(texture_slot_30, v_uvs) * v_color; break;
+	case 31: o_color = texture(texture_slot_31, v_uvs) * v_color; break;
 	}
 }

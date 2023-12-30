@@ -37,16 +37,16 @@ SDL_Window *render_init(void)
     glEnable(GL_BLEND);                                // Active le mélange de couleur d'Open GL
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA); // Indique une méthode de mélange de couleur en gros
 
-    list_batch = array_list_create(sizeof(Batch_Vertex), 16);
+    list_batch = array_list_create(sizeof(Batch_Vertex), 32);
 
     stbi_set_flip_vertically_on_load(1); // Retourner les images au chargement car sinon elles sont inversées
 
     return window;
 }
 
-static i32 find_texture_slot(u32 texture_slots[16], u32 texture_id)
+static i32 find_texture_slot(u32 texture_slots[32], u32 texture_id)
 {
-    for (i32 i = 1; i < 16; ++i)
+    for (i32 i = 1; i < 32; ++i)
     {
         if (texture_slots[i] == texture_id)
         {
@@ -56,14 +56,14 @@ static i32 find_texture_slot(u32 texture_slots[16], u32 texture_id)
     return -1;
 }
 
-static i32 try_insert_texture(u32 texture_slots[16], u32 texture_id)
+static i32 try_insert_texture(u32 texture_slots[32], u32 texture_id)
 {
     i32 index = find_texture_slot(texture_slots, texture_id);
 
     if (index > 0)
         return index;
 
-    for (i32 i = 1; i < 16; ++i)
+    for (i32 i = 1; i < 32; ++i)
     {
         if (texture_slots[i] == 0)
         {
@@ -82,7 +82,7 @@ void render_begin(void)
     list_batch->len = 0;
 }
 
-static void render_batch(Batch_Vertex *vertices, size_t count, u32 texture_ids[16])
+static void render_batch(Batch_Vertex *vertices, size_t count, u32 texture_ids[32])
 {
     glBindBuffer(GL_ARRAY_BUFFER, vbo_batch);
     glBufferSubData(GL_ARRAY_BUFFER, 0, count * sizeof(Batch_Vertex), vertices);
@@ -92,7 +92,7 @@ static void render_batch(Batch_Vertex *vertices, size_t count, u32 texture_ids[1
     glBindTexture(GL_TEXTURE_2D, texture_color);
 
     // Le reste des textures
-    for (u32 i = 1; i < 16; ++i)
+    for (u32 i = 1; i < 32; ++i)
     {
         glActiveTexture(GL_TEXTURE0 + i);
         glBindTexture(GL_TEXTURE_2D, texture_ids[i]);
@@ -142,7 +142,7 @@ void render_end(SDL_Window *window)
 {
     SDL_GL_SwapWindow(window); // Mettre à jour la fenêtre avec le rendu OPENGL
 }
-void render_textures(u32 batch_texture_ids[16])
+void render_textures(u32 batch_texture_ids[32])
 {
     render_batch(list_batch->items, list_batch->len, batch_texture_ids);
 }
@@ -276,7 +276,7 @@ static void calculate_sprite_texture_coordinates(vec4 result, float row, float c
     result[3] = y + h;
 }
 
-void render_sprite_sheet_frame(Sprite_Sheet *sprite_sheet, float row, float column, vec2 position, bool is_flipped, vec4 color, u32 texture_slots[16])
+void render_sprite_sheet_frame(Sprite_Sheet *sprite_sheet, float row, float column, vec2 position, bool is_flipped, vec4 color, u32 texture_slots[32])
 {
     vec4 uvs;
     calculate_sprite_texture_coordinates(uvs, row, column, sprite_sheet->width, sprite_sheet->height, sprite_sheet->cell_width, sprite_sheet->cell_height);
@@ -341,7 +341,7 @@ void init_image(Image *image, const char *path)
 }
 
 // Ajout d'une image à la liste de lots
-void render_image(Image *image, vec2 position, vec2 size, u32 texture_slots[16])
+void render_image(Image *image, vec2 position, vec2 size, u32 texture_slots[32])
 {
     vec4 texture_coordinates = {0.0f, 0.0f, 1.0f, 1.0f};
 

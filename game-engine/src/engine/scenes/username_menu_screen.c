@@ -47,7 +47,7 @@ void update_current_username(SDL_Keycode key)
     }
 }
 
-void display_username_menu(SDL_Window *window, u32 texture_slots[16])
+void display_username_menu(SDL_Window *window, u32 texture_slots[32])
 {
 
     render_image(&pseudoMenuImages[currentSelection_p],

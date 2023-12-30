@@ -18,6 +18,8 @@ float debug_pos_y = 50;
 #define ENNEMY_COUNT 5
 
 static Mix_Chunk *SOUND_SELECTED_BUTTON;
+static Mix_Chunk *SOUND_GAME_OVER;
+static Mix_Music *MUSIC_GAME_OVER;
 
 float width;
 float height;
@@ -28,7 +30,7 @@ Image ennemiesImages[ENNEMY_COUNT];
 int currentButtonSelection = 0;
 int highScore = 0;
 
-u8 game_over_texture_slots[16] = {0};
+u8 game_over_texture_slots[32] = {0};
 bool isNewHighScore = false;
 u8 ennemyKiller = 0;
 char killedBy[8] = "";
@@ -43,6 +45,8 @@ const char *post_data = ""; // Remplacez ceci par les données POST réelles si 
 void game_over_init()
 {
     audio_sound_load(&SOUND_SELECTED_BUTTON, "assets/audio/Select 1.wav");
+    audio_sound_load(&SOUND_GAME_OVER, "assets/audio/Game_Over_sound_effect.mp3");
+    audio_music_load(&MUSIC_GAME_OVER, "assets/audio/Game_Over_music.mp3");
 
     width = global.window_width / render_get_scale();
     height = global.window_height / render_get_scale();
@@ -98,7 +102,11 @@ void show_game_over(int score, u8 ennemy, const char *nameKiller)
     ennemyKiller = ennemy;
     currentButtonSelection = 0;
     global.current_screen = GAME_OVER_SCREEN;
+
     strcpy(killedBy, nameKiller == NULL ? "" : nameKiller);
+
+    audio_sound_play(SOUND_GAME_OVER);
+    audio_music_play(MUSIC_GAME_OVER);
 }
 
 #define SELECTION_DELAY 200 // Ajoutez cette constante pour définir la durée de la pause en millisecondes
@@ -131,12 +139,13 @@ static void game_over_input_handle()
         {
         case 0:
             global.current_screen = GAME_SCREEN;
+            reset_game();
             if (global.server)
                 send_game_statut(true, "");
             break;
         case 1:
             global.current_screen = MENU_SCREEN;
-
+            reset_menu();
             break;
         }
     }
@@ -169,6 +178,8 @@ void display_game_over(SDL_Window *window)
                 {
                 case 0:
                     global.current_screen = GAME_SCREEN;
+                    reset_game();
+
                     if (global.server)
                         send_game_statut(true, "");
                     break;
