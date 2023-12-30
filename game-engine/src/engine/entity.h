@@ -5,6 +5,7 @@
 
 #include "physics.h"
 #include "types.h"
+#include "visitors.h"
 
 typedef struct entity
 {
@@ -17,6 +18,7 @@ typedef struct entity
     u8 health; // Points de vie
     float speed;
     u8 entity_type;
+    Visitor *owner;
 } Entity;
 
 typedef enum
@@ -33,7 +35,7 @@ typedef enum
 } Entity_Type;
 
 void entity_init(void);
-size_t entity_create(vec2 position, vec2 size, vec2 sprite_offset, vec2 velocity, u8 collision_layer, u8 collision_mask, bool is_kinematic, size_t animation_id, On_Hit on_hit, On_Hit_Static on_hit_static, float health, float speed, u8 entity_type);
+size_t entity_create(vec2 position, vec2 size, vec2 sprite_offset, vec2 velocity, u8 collision_layer, u8 collision_mask, bool is_kinematic, size_t animation_id, On_Hit on_hit, On_Hit_Static on_hit_static, float health, float speed, u8 entity_type, Visitor *owner);
 Entity *entity_get(size_t id); //  Obtenir un pointeur vers une entité à partir de son identifiant
 size_t entity_count();
 void entity_reset(void);

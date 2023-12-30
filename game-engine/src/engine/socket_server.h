@@ -2,6 +2,8 @@
 #define SIMPLE_SERVER_H
 
 #include <winsock.h>
+#include <stdbool.h>
+
 // #include <winsock2.h>
 
 #define PORT 12345
@@ -20,5 +22,6 @@ typedef struct
 void server_init();
 void server_cleanup();
 void receive_data();
+void send_game_statut(bool isGameInProgress, char killed_by[30]);
 
 #endif

@@ -6,6 +6,9 @@
 #include "../global.h"
 #include "../my_curl.h"
 #include "../audio.h"
+#include "../array_list.h"
+#include "../visitors.h"
+#include "../socket_server.h"
 
 float debug_menu_pos_x = 50;
 float debug_menu_pos_y = 50;
@@ -82,6 +85,8 @@ static void menu_input_handle()
         {
         case 0:
             global.current_screen = GAME_SCREEN;
+            if (global.server)
+                send_game_statut(true, "");
             break;
         case 1:
             global.current_screen = SCORE_SCREEN;
@@ -141,6 +146,8 @@ void display_menu(SDL_Window *window)
                     {
                     case 0:
                         global.current_screen = GAME_SCREEN;
+                        if (global.server)
+                            send_game_statut(true, "");
                         break;
                     case 1:
                         global.current_screen = SCORE_SCREEN;
@@ -198,8 +205,23 @@ void display_menu(SDL_Window *window)
     if (global.current_screen == MENU_SCREEN)
     {
         render_textures(texture_slots);
+        // Pseudo du joueur
         render_text(global.username, 571, 306, WHITE, 1);
+        // Code de la partie
         render_text(global.generated_code, 55, height * 0.86, YELLOW, 1);
+
+        // Nom des visiteurs
+
+        if (global.visitors->len > 0)
+            render_text("Visiteurs", 55, height * (0.76), YELLOW, 1);
+
+        for (size_t i = 0; i < global.visitors->len; ++i)
+        {
+            Visitor *Visitor = array_list_get(global.visitors, i);
+
+            render_text(Visitor->name, 10, height * (0.70 - i * 0.05), WHITE, 0);
+        }
+
         render_end(window);
     }
     else if (global.current_screen == USERNAME_MENU_SCREEN)

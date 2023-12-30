@@ -9,6 +9,7 @@
 #include "../entity.h"
 #include "../audio.h"
 #include "../scores.h"
+#include "../socket_server.h"
 
 float debug_pos_x = 50;
 float debug_pos_y = 50;
@@ -30,7 +31,7 @@ int highScore = 0;
 u8 game_over_texture_slots[16] = {0};
 bool isNewHighScore = false;
 u8 ennemyKiller = 0;
-char playerKiller[] = "Mondher";
+char killedBy[8] = "";
 static char scoreText[20];
 static char highScoreText[20];
 
@@ -81,7 +82,7 @@ void save_high_score(int score)
     }
 }
 
-void show_game_over(int score, u8 ennemy)
+void show_game_over(int score, u8 ennemy, const char *nameKiller)
 {
     // highScore = 3; // Initialisation bidon, à remplacer avec vrai highscore
     isNewHighScore = false;
@@ -97,6 +98,7 @@ void show_game_over(int score, u8 ennemy)
     ennemyKiller = ennemy;
     currentButtonSelection = 0;
     global.current_screen = GAME_OVER_SCREEN;
+    strcpy(killedBy, nameKiller == NULL ? "" : nameKiller);
 }
 
 #define SELECTION_DELAY 200 // Ajoutez cette constante pour définir la durée de la pause en millisecondes
@@ -129,9 +131,12 @@ static void game_over_input_handle()
         {
         case 0:
             global.current_screen = GAME_SCREEN;
+            if (global.server)
+                send_game_statut(true, "");
             break;
         case 1:
             global.current_screen = MENU_SCREEN;
+
             break;
         }
     }
@@ -164,6 +169,8 @@ void display_game_over(SDL_Window *window)
                 {
                 case 0:
                     global.current_screen = GAME_SCREEN;
+                    if (global.server)
+                        send_game_statut(true, "");
                     break;
                 case 1:
                     global.current_screen = MENU_SCREEN;
@@ -195,8 +202,8 @@ void display_game_over(SDL_Window *window)
     render_textures(game_over_texture_slots);
 
     // Cause de la mort
-    if (ennemyKiller == ENTITY_FIRE)
-        render_text("Suicide", 540, 77, RED, 1);
+
+    render_text(killedBy, 540, 77, RED, 1);
 
     // Score actuel
     render_text(scoreText, width / 2, height * 0.60, WHITE, 1);

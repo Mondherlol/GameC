@@ -9,6 +9,9 @@
 #include "time.h"
 #include "types.h"
 #include "my_curl.h"
+#include "visitors.h"
+#include "array_list.h"
+#include "entity.h"
 
 typedef enum screens
 {
@@ -33,6 +36,10 @@ typedef struct global
     MyCurlHandle curl_handle;
     MyCurlHandle post_curl_handle;
     SocketServer *server;
+    Array_List *visitors; // Liste dynamique de visiteurs
+
 } Global;
+
+void spawn_enemy(Entity_Type enemy_type, bool is_enraged, bool is_flipped, Visitor *owner);
 
 extern Global global;

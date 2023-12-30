@@ -18,6 +18,8 @@
 #include "engine/scenes.h"
 #include "engine/audio.h"
 #include "engine/socket_server.h"
+#include "engine/visitors.h"
+#include "engine/array_list.h"
 
 void reset(void);
 
@@ -38,6 +40,7 @@ static Mix_Music *MUSIC_GAME_OVER;
 static Mix_Music *MUSIC_MENU_PRINCIPAL;
 
 static Sprite_Sheet sprite_sheet_player;
+static Sprite_Sheet sprite_sheet_player_with_weapon;
 static Sprite_Sheet sprite_sheet_map;
 static Sprite_Sheet sprite_sheet_enemy_small;
 static Sprite_Sheet sprite_sheet_enemy_medium;
@@ -49,6 +52,7 @@ static Sprite_Sheet sprite_sheet_apple;
 static Sprite_Sheet sprite_sheet_banana;
 static Sprite_Sheet sprite_sheet_pineapple;
 static Sprite_Sheet sprite_sheet_collected;
+static Sprite_Sheet sprite_sheet_weapons;
 
 static const float HEALTH_PLAYER = 0;
 static const float SPEED_PLAYER = 250;
@@ -110,6 +114,7 @@ typedef struct weapon
     vec2 sprite_offset;
     size_t projectile_animation_id;
     Mix_Chunk *sfx;
+    size_t weapon_animation_id;
 } Weapon;
 
 typedef struct fruit
@@ -142,6 +147,7 @@ static SDL_Window *window;
 
 static size_t anim_player_walk_id;
 static size_t anim_player_idle_id;
+static size_t anim_player_idle_with_pistol_id;
 
 static size_t anim_ennemy_small_run_id;
 static size_t anim_ennemy_medium_run_id;
@@ -150,6 +156,7 @@ static size_t anim_ennemy_flying_fly_id;
 
 static size_t anim_fire_id;
 static size_t anim_projectile_small_id;
+static size_t anim_pistol_idle_id;
 
 static size_t anim_fruit_apple_id;
 static size_t anim_fruit_banana_id;
@@ -161,6 +168,7 @@ static u32 texture_slots[16] = {0};
 
 static Weapon_Type weapon_type = WEAPON_TYPE_PISTOL;
 static bool player_is_grounded = false;
+bool player_is_flipped = false;
 static float spawn_timer = 0;
 static float ground_timer = 0;
 static float shoot_timer = 0;
@@ -207,7 +215,7 @@ static void spawn_projectile(Projectile_Type projectile_type)
     bool is_flipped = animation->is_flipped;
     vec2 velocity = {is_flipped ? -weapon.projectile_speed : weapon.projectile_speed, 0};
 
-    entity_create(body->aabb.position, weapon.sprite_size, weapon.sprite_offset, velocity, COLLISION_LAYER_PROJECTILE, projectile_mask, true, weapon.projectile_animation_id, projectile_on_hit, projectile_on_hit_static, 0, 0, ENTITY_PROJECTILE);
+    entity_create(body->aabb.position, weapon.sprite_size, weapon.sprite_offset, velocity, COLLISION_LAYER_PROJECTILE, projectile_mask, true, weapon.projectile_animation_id, projectile_on_hit, projectile_on_hit_static, 0, 0, ENTITY_PROJECTILE, NULL);
     audio_sound_play(weapon.sfx);
 }
 
@@ -218,10 +226,12 @@ void player_on_hit(Body *self, Body *other, Hit hit)
         Entity *enemy = entity_get(other->entity_id);
         if (enemy->is_active)
         {
-            show_game_over(score, enemy->entity_type);
-
+            show_game_over(score, enemy->entity_type, enemy->owner);
             entity_destroy(self->entity_id);
-            // entity_destroy(other->entity_id);
+
+            if (global.server)
+                send_game_statut(false, enemy->owner != NULL ? enemy->owner->socket_id : "");
+
             reset();
         }
     }
@@ -233,7 +243,7 @@ void player_on_hit(Body *self, Body *other, Hit hit)
             score += POINTS_FRUIT;
             fruits_count--;
             Body *body = physics_body_get(fruit->body_id);
-            entity_create(body->aabb.position, (vec2){32, 32}, fruit->sprite_offset, body->velocity, COLLISION_LAYER_FX, fruit_mask, true, anim_fruit_collected_id, NULL, NULL, 0, 0, ENTITY_FX);
+            entity_create(body->aabb.position, (vec2){32, 32}, fruit->sprite_offset, body->velocity, COLLISION_LAYER_FX, fruit_mask, true, anim_fruit_collected_id, NULL, NULL, 0, 0, ENTITY_FX, NULL);
             fruit->is_active = false;
             entity_destroy(other->entity_id);
             audio_sound_play(SOUND_FRUIT_COLLECT);
@@ -297,10 +307,11 @@ void spawn_fruit(Fruit_Type fruit_type)
                   NULL,
                   0,
                   0,
-                  ENTITY_FRUIT);
+                  ENTITY_FRUIT,
+                  NULL);
 }
 
-void spawn_enemy(Entity_Type enemy_type, bool is_enraged, bool is_flipped)
+void spawn_enemy(Entity_Type enemy_type, bool is_enraged, bool is_flipped, Visitor *owner)
 {
     float spawn_x = is_flipped ? render_width : 0;
     vec2 position = {spawn_x, (render_height - 64)};
@@ -361,7 +372,7 @@ void spawn_enemy(Entity_Type enemy_type, bool is_enraged, bool is_flipped)
     }
 
     vec2 velocity = {is_flipped ? -speed : speed, 0};
-    size_t id = entity_create(position, size, sprite_offset, velocity, COLLISION_LAYER_ENEMY, enemy_mask, false, animation_id, NULL, on_hit_static, health, speed, enemy_type);
+    size_t id = entity_create(position, size, sprite_offset, velocity, COLLISION_LAYER_ENEMY, enemy_mask, false, animation_id, NULL, on_hit_static, health, speed, enemy_type, owner);
     Entity *entity = entity_get(id);
     entity->is_enraged = is_enraged;
 }
@@ -378,7 +389,10 @@ void fire_on_hit(Body *self, Body *other, Hit hit)
     }
     else if (other->collision_layer == COLLISION_LAYER_PLAYER)
     {
-        show_game_over(score, ENTITY_FIRE);
+
+        show_game_over(score, ENTITY_FIRE, "suicide");
+        if (global.server)
+            send_game_statut(false, "");
         reset();
     }
     else if (other->collision_layer == COLLISION_LAYER_FRUIT)
@@ -417,7 +431,8 @@ void reset(void)
                               player_on_hit_static, // on hit static
                               HEALTH_PLAYER,
                               SPEED_PLAYER,
-                              ENTITY_PLAYER
+                              ENTITY_PLAYER,
+                              NULL
 
     );
     // Initialiser terrain du  niveau
@@ -438,9 +453,9 @@ void reset(void)
         // Trigger de disparation des ennemis (feu)
         physics_trigger_create((vec2){render_width * 0.5, -4}, (vec2){64, 8}, 0, fire_mask, fire_on_hit);
     }
-    entity_create((vec2){render_width * 0.5, 0}, (vec2){32, 64}, (vec2){0, 0}, (vec2){0, 0}, 0, 0, true, anim_fire_id, NULL, NULL, 0, 0, ENTITY_FIRE);
-    entity_create((vec2){render_width * 0.5 + 16, -16}, (vec2){32, 64}, (vec2){0, 0}, (vec2){0, 0}, 0, 0, true, anim_fire_id, NULL, NULL, 0, 0, ENTITY_FIRE);
-    entity_create((vec2){render_width * 0.5 - 16, -16}, (vec2){32, 64}, (vec2){0, 0}, (vec2){0, 0}, 0, 0, true, anim_fire_id, NULL, NULL, 0, 0, ENTITY_FIRE);
+    entity_create((vec2){render_width * 0.5, 0}, (vec2){32, 64}, (vec2){0, 0}, (vec2){0, 0}, 0, 0, true, anim_fire_id, NULL, NULL, 0, 0, ENTITY_FIRE, NULL);
+    entity_create((vec2){render_width * 0.5 + 16, -16}, (vec2){32, 64}, (vec2){0, 0}, (vec2){0, 0}, 0, 0, true, anim_fire_id, NULL, NULL, 0, 0, ENTITY_FIRE, NULL);
+    entity_create((vec2){render_width * 0.5 - 16, -16}, (vec2){32, 64}, (vec2){0, 0}, (vec2){0, 0}, 0, 0, true, anim_fire_id, NULL, NULL, 0, 0, ENTITY_FIRE, NULL);
 }
 
 static void input_handle(Body *body_player)
@@ -450,6 +465,7 @@ static void input_handle(Body *body_player)
 
     Animation *walk_anim = animation_get(anim_player_walk_id);
     Animation *idle_anim = animation_get(anim_player_idle_id);
+    Animation *idle_anim_with_pistol = animation_get(anim_player_idle_with_pistol_id);
 
     float velx = 0;
     float vely = body_player->velocity[1];
@@ -459,6 +475,8 @@ static void input_handle(Body *body_player)
         velx += SPEED_PLAYER;
         walk_anim->is_flipped = false;
         idle_anim->is_flipped = false;
+        idle_anim_with_pistol->is_flipped = false;
+        player_is_flipped = false;
     }
 
     if (global.input.left || global.input.left_controller || global.input.joystick_left_controller)
@@ -466,6 +484,8 @@ static void input_handle(Body *body_player)
         velx -= SPEED_PLAYER;
         walk_anim->is_flipped = true;
         idle_anim->is_flipped = true;
+        idle_anim_with_pistol->is_flipped = true;
+        player_is_flipped = true;
     }
 
     if ((global.input.up || global.input.jump_controller) && player_is_grounded)
@@ -502,6 +522,7 @@ int main(int argc, char *argv[])
     audio_init();
     scenes_init();
     score_init();
+    visitors_init();
 
     // Créer un thread pour le serveur socket
     HANDLE SocketServerThread = CreateThread(NULL, 0, server_init, NULL, 0, NULL);
@@ -527,6 +548,8 @@ int main(int argc, char *argv[])
     // Initialiser sprites
     {
         render_sprite_sheet_init(&sprite_sheet_player, "assets/spritesheets/player.png", 24, 24);
+        render_sprite_sheet_init(&sprite_sheet_player_with_weapon, "assets/spritesheets/player_with_weapon.png", 36, 23);
+
         render_sprite_sheet_init(&sprite_sheet_map, "assets/spritesheets/level_1_map.png", 640, 360);
         render_sprite_sheet_init(&sprite_sheet_enemy_small, "assets/spritesheets/chicken_run(32x34).png", 32, 34);
         render_sprite_sheet_init(&sprite_sheet_enemy_medium, "assets/spritesheets/bunny_run(34x44).png", 34, 44);
@@ -538,15 +561,19 @@ int main(int argc, char *argv[])
         render_sprite_sheet_init(&sprite_sheet_banana, "assets/spritesheets/Bananas.png", 32, 32);
         render_sprite_sheet_init(&sprite_sheet_pineapple, "assets/spritesheets/Pineapple.png", 32, 32);
         render_sprite_sheet_init(&sprite_sheet_collected, "assets/spritesheets/Collected.png", 32, 32);
+        render_sprite_sheet_init(&sprite_sheet_weapons, "assets/spritesheets/weapons.png", 32, 32);
     }
 
     // Initialiser animations
     {
 
-        size_t adef_player_walk_id = animation_definition_create(&sprite_sheet_player, 0.1, 0, (u8[]){1, 2, 3, 4, 5, 6, 7}, 7);
-        size_t adef_player_idle_id = animation_definition_create(&sprite_sheet_player, 0, 0, (u8[]){0}, 1);
+        size_t adef_player_walk_id = animation_definition_create(&sprite_sheet_player, 0.1, 4, (u8[]){1, 2, 3, 4, 5, 6, 7}, 7);
+        size_t adef_player_idle_id = animation_definition_create(&sprite_sheet_player, 0, 0, (u8[]){3}, 1);
+        size_t adef_player_idle_with_pistol_id = animation_definition_create(&sprite_sheet_player_with_weapon, 0, 0, (u8[]){3}, 1);
+
         anim_player_walk_id = animation_create(adef_player_walk_id, true);
         anim_player_idle_id = animation_create(adef_player_idle_id, false);
+        anim_player_idle_with_pistol_id = animation_create(adef_player_idle_with_pistol_id, false);
 
         size_t adef_ennemy_flying_fly_id = animation_definition_create(&sprite_sheet_enemy_flying, 0.1, 0, (u8[]){0, 1, 2, 3, 4, 5, 6}, 7);
         size_t adef_ennemy_small_run_id = animation_definition_create(&sprite_sheet_enemy_small, 0.1, 0, (u8[]){0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13}, 14);
@@ -562,6 +589,9 @@ int main(int argc, char *argv[])
 
         size_t adef_projectile_small_id = animation_definition_create(&sprite_sheet_props, 1, 0, (u8[]){0}, 1);
         anim_projectile_small_id = animation_create(adef_projectile_small_id, false);
+
+        size_t adef_pistol_id = animation_definition_create(&sprite_sheet_weapons, 0.1, 0, (u8[]){3}, 1);
+        anim_pistol_idle_id = animation_create(adef_pistol_id, false);
 
         size_t adef_fruit_apple_id = animation_definition_create(&sprite_sheet_apple, 0.1, 0, (u8[]){0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16}, 17);
         size_t adef_fruit_banana_id = animation_definition_create(&sprite_sheet_banana, 0.1, 0, (u8[]){0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16}, 17);
@@ -583,7 +613,8 @@ int main(int argc, char *argv[])
             .projectile_animation_id = anim_projectile_small_id,
             .sprite_size = {16, 16},
             .sprite_offset = {0, 0},
-            .sfx = SOUND_SHOOT};
+            .sfx = SOUND_SHOOT,
+            .weapon_animation_id = anim_pistol_idle_id};
     }
 
     // Initialiser fruits
@@ -611,12 +642,6 @@ int main(int argc, char *argv[])
     {
         time_update();
         input_update();
-        // if (global.server != NULL)
-        // {
-        //     // Créer un thread pour écouter les messages sockets
-        //     HANDLE thread = CreateThread(NULL, 0, receive_data, NULL, 0, NULL);
-        //     CloseHandle(thread); // Fermer le handle du thread pour libérer ses ressources lorsqu'il a terminé
-        // }
 
         switch (global.current_screen)
         {
@@ -687,7 +712,7 @@ int main(int argc, char *argv[])
             if (body_player->velocity[0] != 0 || (global.input.left || global.input.right))
                 player->animation_id = anim_player_walk_id;
             else
-                player->animation_id = anim_player_idle_id;
+                player->animation_id = anim_player_idle_with_pistol_id;
 
             input_handle(body_player);
             physics_update();
@@ -699,7 +724,7 @@ int main(int argc, char *argv[])
                 if (spawn_timer <= 0)
                 {
                     spawn_timer = (float)((rand() % 200) + 200) / 100.f;
-                    spawn_timer *= 0.2;
+                    spawn_timer *= 0.4;
 
                     bool is_flipped = rand() % 100 >= 50;
 
@@ -709,19 +734,19 @@ int main(int argc, char *argv[])
                     switch (random_value)
                     {
                     case 0:
-                        spawn_enemy(ENTITY_ENEMY_TYPE_SMALL, false, is_flipped);
+                        spawn_enemy(ENTITY_ENEMY_TYPE_SMALL, false, is_flipped, NULL);
                         break;
 
                     case 1:
-                        spawn_enemy(ENTITY_ENEMY_TYPE_MEDIUM, false, is_flipped);
+                        spawn_enemy(ENTITY_ENEMY_TYPE_MEDIUM, false, is_flipped, NULL);
                         break;
 
                     case 2:
-                        spawn_enemy(ENTITY_ENEMY_TYPE_LARGE, false, is_flipped);
+                        spawn_enemy(ENTITY_ENEMY_TYPE_LARGE, false, is_flipped, NULL);
                         break;
 
                     case 3:
-                        spawn_enemy(ENTITY_ENEMY_TYPE_FLYING, false, is_flipped);
+                        spawn_enemy(ENTITY_ENEMY_TYPE_FLYING, false, is_flipped, NULL);
                         break;
 
                     default:
@@ -785,6 +810,9 @@ int main(int argc, char *argv[])
             // Rendre le terrain
             render_sprite_sheet_frame(&sprite_sheet_map, 0, 0, (vec2){render_width / 2.0, render_height / 2.0}, false, (vec4){1, 1, 1, DEBUG ? 0.2 : 1}, texture_slots);
 
+            // Rendre l'arme du joueur
+            render_sprite_sheet_frame(&sprite_sheet_weapons, 0, 3, (vec2){body_player->aabb.position[0] + (player_is_flipped ? -7 : 7), body_player->aabb.position[1]}, player_is_flipped, (vec4){1, 1, 1, 1}, texture_slots);
+
             // Gerer l'animation des entity
             for (size_t i = 0; i < entity_count(); ++i)
             {
@@ -815,12 +843,23 @@ int main(int argc, char *argv[])
 
             render_textures(texture_slots);
 
-            render_text(global.username, body_player->aabb.position[0] - 5, body_player->aabb.position[1] + 20, WHITE, 1);
-
             // Afficher score
             sprintf(scoreText, "%d", score);
             render_text(scoreText, render_width / 2, render_height - 25, YELLOW, 1);
 
+            // Afficher nom des visiteurs
+            for (size_t i = 0; i < entity_count(); ++i)
+            {
+                Entity *entity = entity_get(i);
+                if (!entity->owner || !entity->is_active)
+                    continue;
+
+                Body *body = physics_body_get(entity->body_id);
+                vec2 pos;
+                vec2_add(pos, body->aabb.position, entity->sprite_offset);
+
+                render_text(entity->owner->name, pos[0], pos[1] + 15, RED, 1);
+            }
             // Si Debug
             if (DEBUG)
                 render_text("DEBUG", render_width - 50, render_height - 50, ORANGE, 1);

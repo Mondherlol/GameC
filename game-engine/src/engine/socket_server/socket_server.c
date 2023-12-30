@@ -1,19 +1,28 @@
 #include <stdio.h>
+#include <string.h>
 
 #include "../socket_server.h"
 #include "../global.h"
 #include "../util.h"
+#include "../visitors.h"
 
 static void send_create_game_message()
 {
-    char message[256];
+    char message[50];
     snprintf(message, sizeof(message), "create-game | %s", global.username);
+    send(global.server->client_socket, message, strlen(message), 0);
+}
+
+void send_game_statut(bool isGameInProgress, char killed_by[30])
+{
+    char message[50];
+    snprintf(message, sizeof(message), "game-statut | %s | %s", isGameInProgress ? "true" : "false", killed_by);
     send(global.server->client_socket, message, strlen(message), 0);
 }
 
 static void send_close_connexion()
 {
-    char message[256];
+    char message[10];
     snprintf(message, sizeof(message), "close");
     send(global.server->client_socket, message, strlen(message), 0);
 }
@@ -101,6 +110,18 @@ void server_cleanup()
     }
 }
 
+// Retirer les préfixes pour les données
+static void removePrefix(char *str, const char *prefix)
+{
+    size_t prefixLength = strlen(prefix);
+    char *ptr = strstr(str, prefix);
+    if (ptr != NULL)
+    {
+        // Déplacer le pointeur au-delà du préfixe
+        memmove(ptr, ptr + prefixLength, strlen(ptr + prefixLength) + 1);
+    }
+}
+
 void receive_data()
 {
     while (global.server != NULL)
@@ -128,6 +149,41 @@ void receive_data()
                 char *code = global.server->buffer + strlen("code=");
                 printf("Code extrait : %s\n", code);
                 strcpy(global.generated_code, code);
+            }
+            else if (strncmp(global.server->buffer, "new_visitor=", strlen("new_visitor=")) == 0)
+            {
+                char *new_visitor = global.server->buffer + strlen("new_visitor=");
+                char *username = strtok(new_visitor, "&");
+                char *socketId = strtok(NULL, "&");
+                // Retirer le préfixe "socketId="
+                removePrefix(socketId, "socketId=");
+
+                printf("Nouveau visiteur : %s avec id %s\n", username, socketId);
+                addVisitor(username, socketId);
+            }
+            else if (strncmp(global.server->buffer, "leaving_visitor=", strlen("leaving_visitor=")) == 0)
+            {
+                char *leaving_visitor_id = global.server->buffer + strlen("leaving_visitor=");
+                printf("Visiteur avec id %s  a quitter la partie \n", leaving_visitor_id);
+                removeVisitor(leaving_visitor_id);
+            }
+            else if (strncmp(global.server->buffer, "new_enemy=", strlen("new_enemy=")) == 0)
+            {
+
+                char *new_enemy = global.server->buffer + strlen("new_enemy=");
+                char *enemy_type_str = strtok(new_enemy, "&");
+                char *socketId = strtok(NULL, "&");
+                removePrefix(socketId, "socketId=");
+
+                // Convertir la chaîne en nombre
+                int enemy_type = atoi(enemy_type_str);
+                // Recuperer le visiteur
+                Visitor *owner = getVisitor(socketId);
+
+                bool is_flipped = rand() % 100 >= 50;
+
+                spawn_enemy(enemy_type, true, is_flipped, owner);
+                printf("Nouvel ennemi : %d envoyer par  %s  a ete spawn\n", enemy_type, socketId);
             }
         }
     }
