@@ -177,7 +177,7 @@ static int my_curl_get_online_scores(MyCurlHandle *handle, const char *endpoint,
 {
     // Construire l'URL complet
     char url[256];
-    snprintf(url, sizeof(url), "%s%s", SERVER_URL, endpoint);
+    snprintf(url, sizeof(url), "%s%s", global.SERVER_URL, endpoint);
 
     // Définir l'URL à requêter
     curl_easy_setopt(handle->curl, CURLOPT_URL, url);

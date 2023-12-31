@@ -223,7 +223,6 @@ void display_menu(SDL_Window *window)
         render_text(global.generated_code, 55, height * 0.86, YELLOW, 1);
 
         // Nom des visiteurs
-
         if (global.visitors->len > 0)
             render_text("Visiteurs", 55, height * (0.76), YELLOW, 1);
 
@@ -233,6 +232,9 @@ void display_menu(SDL_Window *window)
 
             render_text(Visitor->name, 10, height * (0.70 - i * 0.05), WHITE, 0);
         }
+
+        // Version du jeu
+        render_text(GAME_VERSION, render_width - 30, 8, WHITE, 1);
 
         render_end(window);
     }

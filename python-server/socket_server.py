@@ -1,8 +1,10 @@
 import socketio
 import socket
 import sys
+import os
 
-VERSION=0.5
+
+VERSION=1.1
 
 terminate_thread = False
 
@@ -11,6 +13,23 @@ sio = socketio.Client()
 
 # Définir les détails de la connexion au serveur SocketIO
 server_url = 'http://localhost:3001'
+
+nom_fichier = 'SERVER_URL.txt'
+
+
+try:
+    # Ouvrir le fichier en mode lecture
+    with open(nom_fichier, 'r') as fichier:
+        # Lire la première ligne et la stocker dans une variable
+        server_url = fichier.readline()
+        print(f"La server_url lue depuis le fichier est : {server_url}")
+
+except FileNotFoundError:
+    print(f"Le fichier '{nom_fichier}' n'a pas été trouvé.")
+
+except IOError as e:
+    print(f"Une erreur s'est produite lors de la lecture du fichier : {e}")
+    
 
 # Créer une connexion socket pour la communication avec le programme C
 c_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)

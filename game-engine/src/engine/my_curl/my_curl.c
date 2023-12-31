@@ -28,7 +28,7 @@ int mycurl_get(MyCurlHandle *handle, const char *endpoint)
 {
     // Construire l'URL complet
     char url[256];
-    snprintf(url, sizeof(url), "%s%s", SERVER_URL, endpoint);
+    snprintf(url, sizeof(url), "%s%s", global.SERVER_URL, endpoint);
 
     // Définir l'URL à requêter
     curl_easy_setopt(handle->curl, CURLOPT_URL, url);
@@ -53,7 +53,7 @@ int mycurl_post(MyCurlHandle *handle, const char *endpoint, const char *post_dat
 {
     // Construire l'URL complet
     char url[256];
-    snprintf(url, sizeof(url), "%s%s", SERVER_URL, endpoint);
+    snprintf(url, sizeof(url), "%s%s", global.SERVER_URL, endpoint);
 
     // Définir l'URL à requêter
     curl_easy_setopt(handle->curl, CURLOPT_URL, url);
@@ -116,7 +116,7 @@ DWORD WINAPI async_curl_post_request(LPVOID data)
 
     // Définir l'URL à requêter
     char url[256];
-    snprintf(url, sizeof(url), "%s%s", SERVER_URL, postRequestData->endpoint);
+    snprintf(url, sizeof(url), "%s%s", global.SERVER_URL, postRequestData->endpoint);
 
     // Définir l'URL à requêter
     curl_easy_setopt(postRequestData->handle->curl, CURLOPT_URL, url);
@@ -149,14 +149,13 @@ DWORD WINAPI async_curl_post_request(LPVOID data)
 }
 
 // Fonction pour effectuer une requête POST de manière asynchrone
-int mycurl_post_async(MyCurlHandle *handle, const char *endpoint, const char *post_data, AsyncCallback callback_function)
+void mycurl_post_async(MyCurlHandle *handle, const char *endpoint, const char *post_data, AsyncCallback callback_function)
 {
     // Allouer de la mémoire pour la structure de données de requête POST
     CurlPostRequestData *postRequestData = (CurlPostRequestData *)malloc(sizeof(CurlPostRequestData));
     if (!postRequestData)
     {
         fprintf(stderr, "Erreur lors de l'allocation de mémoire pour postRequestData\n");
-        return 1; // Indiquer une erreur
     }
 
     // Allouer de la mémoire pour copier l'endpoint et les données POST
@@ -170,7 +169,6 @@ int mycurl_post_async(MyCurlHandle *handle, const char *endpoint, const char *po
         free(postRequestData->endpoint);
         free(postRequestData->post_data);
         free(postRequestData);
-        return 1; // Indiquer une erreur
     }
 
     postRequestData->handle = handle;
@@ -184,12 +182,9 @@ int mycurl_post_async(MyCurlHandle *handle, const char *endpoint, const char *po
         free(postRequestData->endpoint);
         free(postRequestData->post_data);
         free(postRequestData);
-        return 1; // Indiquer une erreur
     }
 
-    // Attendre la fin du thread
-    WaitForSingleObject(thread_handle, INFINITE);
+    // // Attendre la fin du thread
+    // WaitForSingleObject(thread_handle, INFINITE);
     CloseHandle(thread_handle);
-
-    return 0; // Succès
 }

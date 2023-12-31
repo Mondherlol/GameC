@@ -1,10 +1,31 @@
 #include <stdio.h>
 #include <string.h>
+#include <stdlib.h>
+#include <windows.h>
 
 #include "../socket_server.h"
 #include "../global.h"
 #include "../util.h"
 #include "../visitors.h"
+
+static void start_python_server()
+{
+
+    const char *executablePath = "start /B socket_server.exe";
+
+    // Utilisez la fonction system pour lancer le programme externe en arrière-plan
+    int result = system(executablePath);
+
+    // Vérifiez le résultat pour détecter d'éventuelles erreurs
+    if (result == 0)
+    {
+        printf("Le programme externe a été lancé avec succès.\n");
+    }
+    else
+    {
+        printf("Erreur lors du lancement du programme externe.\n");
+    }
+}
 
 static void send_create_game_message()
 {
@@ -75,6 +96,9 @@ void server_init()
 
     printf("En attente de connexion...\n");
 
+    // Executer le serveur python
+    start_python_server();
+
     // Accepter la connexion du client
     server->client_socket = accept(server->server_socket, (struct sockaddr *)&server->client_addr, &server->client_addr_len);
     if (server->client_socket == INVALID_SOCKET)
@@ -131,7 +155,20 @@ void receive_data()
         int bytes_received = recv(global.server->client_socket, global.server->buffer, sizeof(global.server->buffer), 0);
         if (bytes_received == SOCKET_ERROR)
         {
-            printf("Erreur lors de la réception de données : %d\n", WSAGetLastError());
+            int error_code = WSAGetLastError();
+            if (error_code == WSAECONNRESET || error_code == WSAENETRESET)
+            {
+                // Le client s'est déconnecté proprement, arrêter la boucle
+                printf("Le client s'est déconnecté proprement.\n");
+                break;
+            }
+            else
+            {
+                // Une autre erreur s'est produite
+                printf("Erreur lors de la réception de données : %d\n", error_code);
+                printf("Vérifiez que vous êtes bien connectés à Internet.");
+                break;
+            }
         }
         else if (bytes_received > 0)
         {

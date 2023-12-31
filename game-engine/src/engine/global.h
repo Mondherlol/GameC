@@ -13,6 +13,8 @@
 #include "array_list.h"
 #include "entity.h"
 
+#define GAME_VERSION "v1"
+
 typedef enum screens
 {
     GAME_SCREEN = 0,
@@ -37,7 +39,7 @@ typedef struct global
     MyCurlHandle post_curl_handle;
     SocketServer *server;
     Array_List *visitors; // Liste dynamique de visiteurs
-
+    char SERVER_URL[20];
 } Global;
 
 void spawn_enemy(Entity_Type enemy_type, bool is_enraged, bool is_flipped, Visitor *owner);

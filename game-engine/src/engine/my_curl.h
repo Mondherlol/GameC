@@ -4,9 +4,6 @@
 #include <curl/curl.h>
 #include <windows.h>
 
-// Définition de la constante pour l'adresse du serveur
-#define SERVER_URL "http://localhost:3001"
-
 // Déclaration d'une structure pour stocker les informations nécessaires à libcurl
 typedef struct myCurlHandle
 {
@@ -44,5 +41,5 @@ void mycurl_cleanup(MyCurlHandle *handle);
 // Faire une requête GET dans un thread séparé
 DWORD WINAPI async_curl_request(LPVOID data);
 
-int mycurl_post_async(MyCurlHandle *handle, const char *endpoint, const char *post_data, AsyncCallback callback_function);
+void mycurl_post_async(MyCurlHandle *handle, const char *endpoint, const char *post_data, AsyncCallback callback_function);
 DWORD WINAPI async_curl_post_request(LPVOID data);

@@ -230,11 +230,14 @@ void player_on_hit(Body *self, Body *other, Hit hit)
         Entity *enemy = entity_get(other->entity_id);
         if (enemy->is_active)
         {
-            show_game_over(score, enemy->entity_type, enemy->owner);
             entity_destroy(self->entity_id);
 
             if (global.server)
                 send_game_statut(false, enemy->owner != NULL ? enemy->owner->socket_id : "");
+
+            show_game_over(score, enemy->entity_type, enemy->owner);
+            physics_reset();
+            entity_reset();
         }
     }
     else if (other->collision_layer == COLLISION_LAYER_FRUIT)
@@ -391,10 +394,11 @@ void fire_on_hit(Body *self, Body *other, Hit hit)
     }
     else if (other->collision_layer == COLLISION_LAYER_PLAYER)
     {
-
-        show_game_over(score, ENTITY_FIRE, "suicide");
+        physics_reset();
+        entity_reset();
         if (global.server)
             send_game_statut(false, "");
+        show_game_over(score, ENTITY_FIRE, "suicide");
     }
     else if (other->collision_layer == COLLISION_LAYER_FRUIT)
     {
@@ -708,7 +712,7 @@ int main(int argc, char *argv[])
                         DEBUG = !DEBUG;
                         break;
                     case SDLK_c:
-                        CHEAT = !CHEAT;
+                        // CHEAT = !CHEAT;
                         break;
                     default:
                         break;

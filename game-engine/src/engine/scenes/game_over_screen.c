@@ -80,10 +80,7 @@ void save_high_score(int score)
     snprintf(endpoint, sizeof(endpoint), "/scores/%s/%d", global.username, score);
 
     // Appeler mycurl_post_async avec le nouvel endpoint
-    if (mycurl_post_async(&global.curl_handle, endpoint, post_data, handle_post_response) != 0)
-    {
-        fprintf(stderr, "Erreur lors de l'appel de mycurl_post_async\n");
-    }
+    mycurl_post_async(&global.curl_handle, endpoint, post_data, handle_post_response);
 }
 
 void show_game_over(int score, u8 ennemy, const char *nameKiller)
@@ -105,7 +102,7 @@ void show_game_over(int score, u8 ennemy, const char *nameKiller)
 
     strcpy(killedBy, nameKiller == NULL ? "" : nameKiller);
 
-    audio_sound_play(SOUND_GAME_OVER);
+    // audio_sound_play(SOUND_GAME_OVER);
     audio_music_play(MUSIC_GAME_OVER);
 }
 
@@ -139,9 +136,11 @@ static void game_over_input_handle()
         {
         case 0:
             global.current_screen = GAME_SCREEN;
-            reset_game();
             if (global.server)
                 send_game_statut(true, "");
+
+            reset_game();
+
             break;
         case 1:
             global.current_screen = MENU_SCREEN;
@@ -178,24 +177,17 @@ void display_game_over(SDL_Window *window)
                 {
                 case 0:
                     global.current_screen = GAME_SCREEN;
-                    reset_game();
-
                     if (global.server)
                         send_game_statut(true, "");
+                    reset_game();
+
                     break;
                 case 1:
                     global.current_screen = MENU_SCREEN;
                     break;
                 }
                 break;
-            case SDLK_r:
-                printf("Test de la route /scores avec une requête POST dans un thread dédié.......\n");
-                // Appel de la fonction mycurl_post_async
-                if (mycurl_post_async(&global.curl_handle, endpoint, post_data, handle_post_response) != 0)
-                {
-                    fprintf(stderr, "Erreur lors de l'appel de mycurl_post_async\n");
-                }
-                break;
+
             default:
                 break;
             }

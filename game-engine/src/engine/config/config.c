@@ -6,6 +6,7 @@
 #include "../input.h"
 
 static const char *CONFIG_DEFAULT =
+    "SERVER_URL = http://localhost:3001\n"
     "[player]\n"
     "username = motaru\n"
     "[controls]\n"
@@ -70,6 +71,16 @@ static void load_username(const char *config_buffer)
     global.username[6] = '\0';
 }
 
+static void load_server_url(const char *config_buffer)
+{
+    const char *server_url = config_get_value(config_buffer, "SERVER_URL");
+    printf("SERVER_URL value =%s", server_url);
+    if (server_url != NULL)
+        strcpy(global.SERVER_URL, server_url);
+    else
+        strcpy(global.SERVER_URL, "http://localhost:3001");
+}
+
 static int config_load(void)
 {
     File file_config = io_file_read("./config.ini");
@@ -79,6 +90,7 @@ static int config_load(void)
     // lier les touches avec le fichier config.ini
     load_controls(file_config.data);
     load_username(file_config.data);
+    load_server_url(file_config.data);
     free(file_config.data);
 
     return 0;

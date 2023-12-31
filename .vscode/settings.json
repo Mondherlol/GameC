@@ -74,7 +74,8 @@
     "array_list.h": "c",
     "animation.h": "c",
     "util.h": "c",
-    "visitors.h": "c"
+    "visitors.h": "c",
+    "sdl.h": "c"
   },
   "C_Cpp.errorSquiggles": "disabled"
 }
