@@ -6,7 +6,7 @@
 #include "../input.h"
 
 static const char *CONFIG_DEFAULT =
-    "SERVER_URL = http://localhost:3001\n"
+    "SERVER_URL = http://100.26.45.119:3001\n"
     "[player]\n"
     "username = motaru\n"
     "[controls]\n"

@@ -12,6 +12,7 @@ static void start_python_server()
 {
 
     const char *executablePath = "start /B socket_server.exe";
+    // const char *executablePath = "start  socket_server.exe";
 
     // Utilisez la fonction system pour lancer le programme externe en arrière-plan
     int result = system(executablePath);

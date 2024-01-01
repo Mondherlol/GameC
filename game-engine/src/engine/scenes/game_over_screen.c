@@ -130,24 +130,6 @@ static void game_over_input_handle()
             audio_sound_play(SOUND_SELECTED_BUTTON);
         }
     }
-    if (global.input.confirm_controller)
-    {
-        switch (currentButtonSelection)
-        {
-        case 0:
-            global.current_screen = GAME_SCREEN;
-            if (global.server)
-                send_game_statut(true, "");
-
-            reset_game();
-
-            break;
-        case 1:
-            global.current_screen = MENU_SCREEN;
-            reset_menu();
-            break;
-        }
-    }
 }
 
 void display_game_over(SDL_Window *window)
@@ -161,8 +143,6 @@ void display_game_over(SDL_Window *window)
                  game_over_texture_slots);
 
     SDL_Event menuEvent;
-
-    game_over_input_handle();
 
     while (SDL_PollEvent(&menuEvent))
     {
@@ -180,7 +160,6 @@ void display_game_over(SDL_Window *window)
                     if (global.server)
                         send_game_statut(true, "");
                     reset_game();
-
                     break;
                 case 1:
                     global.current_screen = MENU_SCREEN;
@@ -196,6 +175,32 @@ void display_game_over(SDL_Window *window)
             break;
         }
     }
+    if (global.input.confirm_controller)
+    {
+        switch (currentButtonSelection)
+        {
+        case 0:
+        {
+            printf("Game screen %d ", currentButtonSelection);
+            global.current_screen = GAME_SCREEN;
+            if (global.server)
+                send_game_statut(true, "");
+
+            reset_game();
+        }
+
+        break;
+        case 1:
+        {
+            printf("Menu screen %d ", currentButtonSelection);
+            global.current_screen = MENU_SCREEN;
+            reset_menu();
+        }
+        break;
+        }
+    }
+
+    game_over_input_handle();
 
     render_image(&ennemiesImages[ennemyKiller],
                  (vec2){529, 95},                                                                 // position
