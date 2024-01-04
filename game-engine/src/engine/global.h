@@ -13,7 +13,7 @@
 #include "array_list.h"
 #include "entity.h"
 
-#define GAME_VERSION "v2"
+#define GAME_VERSION "v3"
 
 typedef enum screens
 {

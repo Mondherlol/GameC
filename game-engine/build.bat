@@ -20,5 +20,5 @@ set ICO_FILE=assets\icon.ico
 rc /fo mygame.res mygame.rc
 CL /Zi /I ../include %files% /link %libs% /OUT:mygame.exe mygame.res
 
-del .\*.ilk .\*.obj .\*.pdb .\*.res
+del .\*.ilk .\*.obj .\*.pdb .\*.res .\scores.txt .\config.ini
 

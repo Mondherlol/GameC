@@ -8,15 +8,14 @@
 static const char *CONFIG_DEFAULT =
     "SERVER_URL = http://57.129.6.122:3001\n"
     "[player]\n"
-    "username = motaru\n"
+    "username = user\n"
     "[controls]\n"
     "up = UP\n"
     "down = DOWN\n"
     "left = LEFT\n"
     "right = RIGHT\n"
-    "shoot = X\n"
+    "shoot = Space\n"
     "escape = Escape\n"
-    "confirm = A\n "
     "\n";
 
 static char tmp_buffer[20] = {0};
